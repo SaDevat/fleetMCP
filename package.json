@@ -1,0 +1,42 @@
+{
+  "name": "mcpx",
+  "version": "1.0.0",
+  "description": "The missing CLI for the MCP ecosystem",
+  "author": "mcpx contributors",
+  "license": "MIT",
+  "keywords": ["mcp", "model-context-protocol", "cli", "ai", "llm", "tooling"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sdevat/mcpx.git"
+  },
+  "module": "src/index.ts",
+  "main": "src/index.ts",
+  "type": "module",
+  "bin": {
+    "mcpx": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun --watch src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^25.3.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "commander": "^14.0.3",
+    "gradient-string": "^3.0.0",
+    "ora": "^9.3.0",
+    "yaml": "^2.8.2",
+    "zod": "^4.3.6"
+  }
+}
