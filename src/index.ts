@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
+import { renderBrandHeader, palette } from "./utils/brand.ts";
 import packageJson from "../package.json" with { type: "json" };
 
 // ---------------------------------------------------------------------------
@@ -12,6 +13,21 @@ program
   .name("mcpx")
   .description("The missing CLI for the MCP ecosystem")
   .version(packageJson.version, "-v, --version", "Output the current version");
+
+// Add branded header before help output
+program.addHelpText("beforeAll", renderBrandHeader(packageJson.version));
+
+// Customize help formatting
+program.configureHelp({
+  subcommandTerm: (cmd) => palette.primary(cmd.name() + " " + cmd.usage()),
+  optionTerm: (option) => palette.primary(option.flags),
+});
+
+// Add footer with documentation link
+program.addHelpText(
+  "after",
+  `\n${palette.dim("  Documentation: https://github.com/sdevat/mcpx")}\n`,
+);
 
 // ---------------------------------------------------------------------------
 // Parse — must be last
