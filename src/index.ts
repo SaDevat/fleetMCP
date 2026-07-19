@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
+import { configCommand } from "./cli/config.ts";
 import { renderBrandHeader, palette } from "./utils/brand.ts";
 import packageJson from "../package.json" with { type: "json" };
 
@@ -28,6 +29,12 @@ program.addHelpText(
   "after",
   `\n${palette.dim("  Documentation: https://github.com/sdevat/mcpx")}\n`,
 );
+
+// ---------------------------------------------------------------------------
+// Register Commands
+// ---------------------------------------------------------------------------
+
+program.addCommand(configCommand);
 
 // ---------------------------------------------------------------------------
 // Parse — must be last
