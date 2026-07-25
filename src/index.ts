@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
 import { configCommand } from "./cli/config.ts";
+import { inspectCommand } from "./cli/inspect.ts";
 import { renderBrandHeader, palette } from "./utils/brand.ts";
 import packageJson from "../package.json" with { type: "json" };
 
@@ -35,6 +36,7 @@ program.addHelpText(
 // ---------------------------------------------------------------------------
 
 program.addCommand(configCommand);
+program.addCommand(inspectCommand);
 
 // ---------------------------------------------------------------------------
 // Parse — must be last
