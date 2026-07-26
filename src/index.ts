@@ -2,6 +2,7 @@
 import { Command } from "commander";
 import { configCommand } from "./cli/config.ts";
 import { inspectCommand } from "./cli/inspect.ts";
+import { callCommand } from "./cli/call.ts";
 import { renderBrandHeader, palette } from "./utils/brand.ts";
 import packageJson from "../package.json" with { type: "json" };
 
@@ -37,6 +38,7 @@ program.addHelpText(
 
 program.addCommand(configCommand);
 program.addCommand(inspectCommand);
+program.addCommand(callCommand);
 
 // ---------------------------------------------------------------------------
 // Parse — must be last
