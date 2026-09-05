@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 /**
- * verify-logs.ts — Quick sanity check for the mcpx proxy SQLite log store.
+ * verify-logs.ts — Quick sanity check for the fleetmcp proxy SQLite log store.
  *
  * Usage:
  *   bun test/verify-logs.ts [--alias <alias>] [--limit <n>]
  *
- * Reads ~/.mcpx/logs.db and prints the most recent proxy log entries in a
+ * Reads ~/.fleetmcp/logs.db and prints the most recent proxy log entries in a
  * human-readable table. Exits 1 if the database does not exist or the
  * proxy_logs table is missing.
  */
@@ -16,7 +16,7 @@ import { join } from "node:path";
 import Table from "cli-table3";
 import chalk from "chalk";
 
-const DB_PATH = join(homedir(), ".mcpx", "logs.db");
+const DB_PATH = join(homedir(), ".fleetmcp", "logs.db");
 
 // ---------------------------------------------------------------------------
 // Parse args
@@ -41,7 +41,7 @@ for (let i = 0; i < args.length; i++) {
 const dbFile = Bun.file(DB_PATH);
 if (!(await dbFile.exists())) {
   console.error(chalk.red(`Database not found: ${DB_PATH}`));
-  console.error(chalk.yellow("Have you run `mcpx proxy <alias>` at least once?"));
+  console.error(chalk.yellow("Have you run `fleetmcp proxy <alias>` at least once?"));
   process.exit(1);
 }
 

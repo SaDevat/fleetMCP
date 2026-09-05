@@ -2,7 +2,7 @@ import { fstatSync } from "node:fs";
 
 /**
  * Reads all data from stdin if the process is being piped into.
- * Used by `mcpx call` for: cat data.json | mcpx call my-server process_data
+ * Used by `fleetmcp call` for: cat data.json | fleetmcp call my-server process_data
  *
  * Returns null when stdin is a TTY (interactive) or when it is an inherited
  * non-TTY fd with no pipe attached (e.g. `bun run`, CI scripts).
@@ -30,7 +30,7 @@ export async function readStdin(): Promise<unknown | null> {
     return JSON.parse(raw);
   } catch {
     throw new Error(
-      "Piped stdin is not valid JSON. mcpx call expects a JSON object from stdin."
+      "Piped stdin is not valid JSON. fleetmcp call expects a JSON object from stdin."
     );
   }
 }

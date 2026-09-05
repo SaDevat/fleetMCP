@@ -11,7 +11,7 @@ function highlightTemplateVariables(template: string): string {
 }
 
 /**
- * Renders the capability tree for `mcpx inspect`.
+ * Renders the capability tree for `fleetmcp inspect`.
  * Returns a string ready for console.log().
  */
 export function renderCapabilityTree(data: {

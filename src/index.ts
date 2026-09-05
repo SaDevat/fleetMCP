@@ -15,8 +15,8 @@ import packageJson from "../package.json" with { type: "json" };
 const program = new Command();
 
 program
-  .name("mcpx")
-  .description("The missing CLI for the MCP ecosystem")
+  .name("fleetmcp")
+  .description("One config, one endpoint, all your MCP servers, always warm")
   .version(packageJson.version, "-v, --version", "Output the current version");
 
 // Add branded header before help output
@@ -31,7 +31,7 @@ program.configureHelp({
 // Add footer with documentation link
 program.addHelpText(
   "after",
-  `\n${palette.dim("  Documentation: https://github.com/sdevat/mcpx")}\n`,
+  `\n${palette.dim("  Documentation: https://github.com/sdevat/fleetmcp")}\n`,
 );
 
 // ---------------------------------------------------------------------------

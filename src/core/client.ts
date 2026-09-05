@@ -36,7 +36,7 @@ export function getClientProtocolVersion(client: Client): string {
 // ---------------------------------------------------------------------------
 
 export interface McpClientOptions {
-  /** A registered alias from ~/.mcpx/config.yml */
+  /** A registered alias from ~/.fleetmcp/config.yml */
   alias?: string;
   /** A raw ServerConfig — bypasses the registry (used for inline URLs) */
   serverConfig?: ServerConfig;
@@ -52,8 +52,8 @@ export async function createMcpClient(options: McpClientOptions): Promise<Client
     const found = config.servers[options.alias];
     if (!found) {
       throw new Error(
-        `Alias "${options.alias}" not found in ~/.mcpx/config.yml. ` +
-        `Run \`mcpx config list\` to see registered servers.`
+        `Alias "${options.alias}" not found in ~/.fleetmcp/config.yml. ` +
+        `Run \`fleetmcp config list\` to see registered servers.`
       );
     }
     serverConfig = found;
@@ -75,7 +75,7 @@ export async function createMcpClient(options: McpClientOptions): Promise<Client
   }
 
   const client = new Client(
-    { name: "mcpx", version: packageJson.version },
+    { name: "fleetmcp", version: packageJson.version },
     { enforceStrictCapabilities: false }
   );
 

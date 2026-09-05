@@ -1,4 +1,4 @@
-# Contributing to mcpx
+# Contributing to fleetmcp
 
 Thanks for your interest in contributing! This document covers the development workflow, code conventions, and how to submit changes.
 
@@ -9,8 +9,8 @@ Thanks for your interest in contributing! This document covers the development w
 **Prerequisites:** [Bun](https://bun.sh) ≥ 1.1, TypeScript 5+
 
 ```bash
-git clone https://github.com/sdevat/mcpx.git
-cd mcpx
+git clone https://github.com/sdevat/fleetmcp.git
+cd fleetmcp
 bun install
 ```
 

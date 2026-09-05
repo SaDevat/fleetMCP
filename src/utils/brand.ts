@@ -20,22 +20,37 @@ export const palette = {
 export const brandGradient = gradient(["#00D4FF", "#FF00FF"]);
 
 // ── ASCII Logo ─────────────────────────────────────────────────
-const LOGO_RAW = `
-  ███╗   ███╗ ██████╗██████╗ ██╗  ██╗
-  ████╗ ████║██╔════╝██╔══██╗╚██╗██╔╝
-  ██╔████╔██║██║     ██████╔╝ ╚███╔╝
-  ██║╚██╔╝██║██║     ██╔═══╝  ██╔██╗
-  ██║ ╚═╝ ██║╚██████╗██║     ██╔╝ ██╗
-  ╚═╝     ╚═╝ ╚═════╝╚═╝     ╚═╝  ╚═╝
-`.trimStart();
+// "MCP" set large as the exponent to a small lowercase "fleet".
+const MCP_ART = [
+  "███╗   ███╗ ██████╗██████╗ ",
+  "████╗ ████║██╔════╝██╔══██╗",
+  "██╔████╔██║██║     ██████╔╝",
+  "██║╚██╔╝██║██║     ██╔═══╝ ",
+  "██║ ╚═╝ ██║╚██████╗██║     ",
+  "╚═╝     ╚═╝ ╚═════╝╚═╝     ",
+];
+
+const WORDMARK = "fleet";
 
 export function renderLogo(): string {
-  return brandGradient.multiline(LOGO_RAW);
+  // Gradient the whole block at once so the sweep is continuous across rows,
+  // then prefix each row — the wordmark sits on the baseline, MCP rides above.
+  const rows = brandGradient.multiline(MCP_ART.join("\n")).split("\n");
+  const gutter = " ".repeat(WORDMARK.length);
+
+  return rows
+    .map((row, i) => {
+      const left = i === rows.length - 1 ? palette.brandCyan(WORDMARK) : gutter;
+      return `  ${left}  ${row}`;
+    })
+    .join("\n");
 }
 
 // ── Tagline ────────────────────────────────────────────────────
 export function renderTagline(version: string): string {
-  return palette.dim(`  The missing CLI for the MCP ecosystem  v${version}`);
+  return palette.dim(
+    `  one config, one endpoint, all your servers, always warm  v${version}`,
+  );
 }
 
 // ── Brand Header (logo + tagline, for --help and startup) ─────

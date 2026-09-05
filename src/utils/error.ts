@@ -25,11 +25,11 @@ export function die(error: unknown, exitCode = 1, customSuggestions?: string[]):
     message = error.message;
 
     // Contextual suggestions based on error patterns
-    if (error.message.includes("not found in ~/.mcpx/config.yml")) {
-      suggestions.push("Run `mcpx config list` to see registered servers.");
+    if (error.message.includes("not found in ~/.fleetmcp/config.yml")) {
+      suggestions.push("Run `fleetmcp config list` to see registered servers.");
       const alias = error.message.match(/"([^"]+)"/)?.[1];
       if (alias) {
-        suggestions.push(`Run \`mcpx config add ${alias}\` to add it.`);
+        suggestions.push(`Run \`fleetmcp config add ${alias}\` to add it.`);
       }
     }
 
@@ -39,7 +39,7 @@ export function die(error: unknown, exitCode = 1, customSuggestions?: string[]):
       error.message.includes("connect ECONNREFUSED")
     ) {
       suggestions.push("Is the server running? Check the command and arguments.");
-      suggestions.push("Run `mcpx test <alias>` for a full diagnostic.");
+      suggestions.push("Run `fleetmcp test <alias>` for a full diagnostic.");
     }
 
     if (error.message.includes("E404") || error.message.includes("Not found")) {
@@ -49,7 +49,7 @@ export function die(error: unknown, exitCode = 1, customSuggestions?: string[]):
 
     if (error.message.includes("ENOENT") || error.message.includes("command not found")) {
       suggestions.push("The command binary may not be installed or not in PATH.");
-      suggestions.push("Check `mcpx config list` for a status indicator.");
+      suggestions.push("Check `fleetmcp config list` for a status indicator.");
     }
   } else {
     message = "An unknown error occurred.";

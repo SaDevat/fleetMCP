@@ -13,7 +13,7 @@ import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { getConfig } from "../core/config.ts";
 import { createMcpClient } from "../core/client.ts";
 import { brandSpinner } from "../utils/brand.ts";
-import { ensureMcpxDir } from "../core/config.ts";
+import { ensureFleetmcpDir } from "../core/config.ts";
 import { die } from "../utils/error.ts";
 import packageJson from "../../package.json" with { type: "json" };
 
@@ -43,7 +43,7 @@ function estimateTokens(payload: unknown): number {
 }
 
 function openLogDb(): Database {
-  const dbPath = join(homedir(), ".mcpx", "logs.db");
+  const dbPath = join(homedir(), ".fleetmcp", "logs.db");
   const db = new Database(dbPath);
 
   // Create table with token columns (migration-safe: IF NOT EXISTS)
@@ -149,7 +149,7 @@ export const proxyCommand = new Command("proxy")
       if (entries.length === 0) {
         console.log(
           chalk.yellow(
-            "No servers configured. Run `mcpx config add` to register servers first.",
+            "No servers configured. Run `fleetmcp config add` to register servers first.",
           ),
         );
         return;
@@ -193,7 +193,7 @@ export const proxyCommand = new Command("proxy")
       );
 
       // 2. Setup SQLite logging
-      await ensureMcpxDir();
+      await ensureFleetmcpDir();
       db = openLogDb();
 
       // 3. Build tool routing map (shared across all request-scoped servers)
@@ -220,7 +220,7 @@ export const proxyCommand = new Command("proxy")
 
       function createSession(): ProxySession {
         const server = new Server(
-          { name: "mcpx-proxy", version: packageJson.version },
+          { name: "fleetmcp-proxy", version: packageJson.version },
           { capabilities: { tools: {} } },
         );
 
@@ -395,7 +395,7 @@ export const proxyCommand = new Command("proxy")
 
             return new Response(
               JSON.stringify({
-                name: "mcpx-proxy",
+                name: "fleetmcp-proxy",
                 version: packageJson.version,
                 tools: allNamespacedTools.length,
                 servers: subClients.length,

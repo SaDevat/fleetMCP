@@ -157,7 +157,7 @@ function renderContent(result: Record<string, unknown>, isError: boolean): void 
 
 export const callCommand = new Command("call")
   .description("Invoke a tool on a configured server (the cURL for MCP)")
-  .argument("<alias>", "Server alias from ~/.mcpx/config.yml")
+  .argument("<alias>", "Server alias from ~/.fleetmcp/config.yml")
   .argument("<tool>", "Tool name to invoke")
   .argument("[args...]", "Tool arguments as key=value pairs or a JSON string")
   .option("--raw", "Disable smart coercion on key=value pairs (values stay strings)")

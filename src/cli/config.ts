@@ -2,8 +2,8 @@ import { Command } from "commander";
 import Table from "cli-table3";
 import chalk from "chalk";
 import * as p from "@clack/prompts";
-import { getConfig, saveConfig, ensureMcpxDir, resolveServerConfig } from "../core/config.ts";
-import { McpxConfigSchema, ServerConfigSchema } from "../types/config.ts";
+import { getConfig, saveConfig, ensureFleetmcpDir, resolveServerConfig } from "../core/config.ts";
+import { FleetmcpConfigSchema, ServerConfigSchema } from "../types/config.ts";
 import type { ServerConfig } from "../types/config.ts";
 import { prettyJson } from "../formatters/json.ts";
 import { die } from "../utils/error.ts";
@@ -14,11 +14,11 @@ import { statusDot, palette } from "../utils/brand.ts";
 // ---------------------------------------------------------------------------
 
 export const configCommand = new Command("config").description(
-  "Manage the mcpx server registry (~/.mcpx/config.yml)"
+  "Manage the fleetmcp server registry (~/.fleetmcp/config.yml)"
 );
 
 // ---------------------------------------------------------------------------
-// `mcpx config list`
+// `fleetmcp config list`
 // ---------------------------------------------------------------------------
 
 configCommand
@@ -30,7 +30,7 @@ configCommand
 
     if (entries.length === 0) {
       console.log(
-        palette.warning("No servers configured. Run `mcpx config add` to get started."),
+        palette.warning("No servers configured. Run `fleetmcp config add` to get started."),
       );
       return;
     }
@@ -69,7 +69,7 @@ configCommand
   });
 
 // ---------------------------------------------------------------------------
-// `mcpx config add <alias>` — Interactive wizard + flag-based mode
+// `fleetmcp config add <alias>` — Interactive wizard + flag-based mode
 // ---------------------------------------------------------------------------
 
 function collectEnv(val: string, acc: string[]): string[] {
@@ -110,7 +110,7 @@ configCommand
   .option("-u, --url <url>", "Server URL (http only)")
   .option("-e, --env <KEY=VALUE>", "Env var for the server (repeatable, stdio only)", collectEnv, [] as string[])
   .action(async (aliasArg: string | undefined, options: Record<string, string | string[] | undefined>) => {
-    await ensureMcpxDir();
+    await ensureFleetmcpDir();
     const config = await getConfig();
 
     // Detect interactive mode: no alias OR (alias provided but missing required flags)
@@ -140,7 +140,7 @@ configCommand
       } else if (config.servers[alias]) {
         p.cancel(
           chalk.red(
-            `Alias "${alias}" already exists. Remove it first with \`mcpx config remove ${alias}\`.`,
+            `Alias "${alias}" already exists. Remove it first with \`fleetmcp config remove ${alias}\`.`,
           ),
         );
         process.exit(1);
@@ -268,7 +268,7 @@ configCommand
       if (config.servers[alias]) {
         console.error(
           chalk.red(
-            `Error: alias "${alias}" already exists. Remove it first with \`mcpx config remove ${alias}\`.`,
+            `Error: alias "${alias}" already exists. Remove it first with \`fleetmcp config remove ${alias}\`.`,
           ),
         );
         process.exit(1);
@@ -330,7 +330,7 @@ configCommand
   });
 
 // ---------------------------------------------------------------------------
-// `mcpx config remove <alias>`
+// `fleetmcp config remove <alias>`
 // ---------------------------------------------------------------------------
 
 configCommand
@@ -345,14 +345,14 @@ configCommand
     }
 
     const { [alias]: _removed, ...remaining } = config.servers;
-    const updated = McpxConfigSchema.parse({ ...config, servers: remaining });
+    const updated = FleetmcpConfigSchema.parse({ ...config, servers: remaining });
     await saveConfig(updated);
 
     console.log(chalk.green(`Removed server "${alias}".`));
   });
 
 // ---------------------------------------------------------------------------
-// `mcpx config check` — Validate ${VAR} interpolation
+// `fleetmcp config check` — Validate ${VAR} interpolation
 // ---------------------------------------------------------------------------
 
 configCommand
@@ -427,7 +427,7 @@ function mapExternalEntry(raw: unknown): ServerConfig | undefined {
 }
 
 // ---------------------------------------------------------------------------
-// `mcpx config import <path>`
+// `fleetmcp config import <path>`
 // ---------------------------------------------------------------------------
 
 configCommand
@@ -463,7 +463,7 @@ configCommand
       );
     }
 
-    await ensureMcpxDir();
+    await ensureFleetmcpDir();
     const config = await getConfig();
 
     const imported: string[] = [];
@@ -509,7 +509,7 @@ configCommand
   });
 
 // ---------------------------------------------------------------------------
-// `mcpx config export [--format cursor|claude]`
+// `fleetmcp config export [--format cursor|claude]`
 // ---------------------------------------------------------------------------
 
 function toClaudeFormat(servers: Record<string, ServerConfig>): Record<string, unknown> {

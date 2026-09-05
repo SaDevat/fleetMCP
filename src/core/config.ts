@@ -1,14 +1,14 @@
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { McpxConfigSchema, type McpxConfig, type ServerConfig } from "../types/config.ts";
+import { FleetmcpConfigSchema, type FleetmcpConfig, type ServerConfig } from "../types/config.ts";
 
 // ---------------------------------------------------------------------------
 // Paths
 // ---------------------------------------------------------------------------
 
-const MCPX_DIR = join(homedir(), ".mcpx");
-const CONFIG_PATH = join(MCPX_DIR, "config.yml");
+const FLEETMCP_DIR = join(homedir(), ".fleetmcp");
+const CONFIG_PATH = join(FLEETMCP_DIR, "config.yml");
 
 // ---------------------------------------------------------------------------
 // Secret Management — ${VAR} interpolation
@@ -59,36 +59,36 @@ export function resolveServerConfig(raw: ServerConfig): ServerConfig {
 // ---------------------------------------------------------------------------
 
 /**
- * Reads and validates ~/.mcpx/config.yml.
+ * Reads and validates ~/.fleetmcp/config.yml.
  * If the file does not exist, returns a default empty config.
  * Throws a ZodError with a human-readable message if the file is malformed.
  */
-export async function getConfig(): Promise<McpxConfig> {
+export async function getConfig(): Promise<FleetmcpConfig> {
   const file = Bun.file(CONFIG_PATH);
   const exists = await file.exists();
 
   if (!exists) {
-    return McpxConfigSchema.parse({});
+    return FleetmcpConfigSchema.parse({});
   }
 
   const raw = await file.text();
   const parsed = parseYaml(raw);
-  return McpxConfigSchema.parse(parsed);
+  return FleetmcpConfigSchema.parse(parsed);
 }
 
 /**
- * Serializes a McpxConfig to YAML and writes it to ~/.mcpx/config.yml.
- * Creates ~/.mcpx/ if it does not exist.
+ * Serializes a FleetmcpConfig to YAML and writes it to ~/.fleetmcp/config.yml.
+ * Creates ~/.fleetmcp/ if it does not exist.
  */
-export async function saveConfig(config: McpxConfig): Promise<void> {
-  await ensureMcpxDir();
+export async function saveConfig(config: FleetmcpConfig): Promise<void> {
+  await ensureFleetmcpDir();
   await Bun.write(Bun.file(CONFIG_PATH), stringifyYaml(config, { indent: 2 }));
 }
 
 /**
- * Ensures ~/.mcpx/ directory exists. Call before any write operation.
+ * Ensures ~/.fleetmcp/ directory exists. Call before any write operation.
  */
-export async function ensureMcpxDir(): Promise<void> {
+export async function ensureFleetmcpDir(): Promise<void> {
   const { mkdir } = await import("node:fs/promises");
-  await mkdir(MCPX_DIR, { recursive: true });
+  await mkdir(FLEETMCP_DIR, { recursive: true });
 }

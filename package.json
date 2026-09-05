@@ -1,19 +1,19 @@
 {
-  "name": "mcpx",
-  "version": "1.0.0",
-  "description": "The missing CLI for the MCP ecosystem",
-  "author": "mcpx contributors",
+  "name": "fleetmcp",
+  "version": "0.1.0",
+  "description": "One config, one endpoint, all your MCP servers, always warm",
+  "author": "fleetmcp contributors",
   "license": "MIT",
-  "keywords": ["mcp", "model-context-protocol", "cli", "ai", "llm", "tooling"],
+  "keywords": ["mcp", "model-context-protocol", "cli", "ai", "llm", "tooling", "gateway", "proxy"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/sdevat/mcpx.git"
+    "url": "https://github.com/sdevat/fleetmcp.git"
   },
   "module": "src/index.ts",
   "main": "src/index.ts",
   "type": "module",
   "bin": {
-    "mcpx": "./src/index.ts"
+    "fleetmcp": "./src/index.ts"
   },
   "scripts": {
     "start": "bun run src/index.ts",

@@ -151,7 +151,7 @@ async function checkUnknownTool(
   const start = performance.now();
   try {
     const result = await client.callTool(
-      { name: "__mcpx_probe_nonexistent_tool__", arguments: {} },
+      { name: "__fleetmcp_probe_nonexistent_tool__", arguments: {} },
       undefined,
       { timeout: 10_000 },
     );
@@ -222,7 +222,7 @@ function renderResults(alias: string, checks: CheckResult[], totalMs: number): v
 
 export const testCommand = new Command("test")
   .description("Run automated health and compliance checks against a server")
-  .argument("<alias>", "Server alias from ~/.mcpx/config.yml")
+  .argument("<alias>", "Server alias from ~/.fleetmcp/config.yml")
   .option("--ci", "Exit with non-zero code on any failure (for CI/CD)")
   .action(async (alias: string, options: { ci: true | undefined }) => {
       let client: Awaited<ReturnType<typeof createMcpClient>> | undefined;
@@ -251,7 +251,7 @@ export const testCommand = new Command("test")
       if (config.servers[alias] === undefined) {
         die(
           new Error(
-            `Alias "${alias}" not found in ~/.mcpx/config.yml. Run \`mcpx config list\` to see registered servers.`,
+            `Alias "${alias}" not found in ~/.fleetmcp/config.yml. Run \`fleetmcp config list\` to see registered servers.`,
           ),
           1,
         );

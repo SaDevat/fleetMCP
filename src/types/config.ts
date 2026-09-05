@@ -24,10 +24,10 @@ export const ServerConfigSchema = z.discriminatedUnion("type", [
 ]);
 
 // ---------------------------------------------------------------------------
-// Root Config Schema — serialized to/from ~/.mcpx/config.yml
+// Root Config Schema — serialized to/from ~/.fleetmcp/config.yml
 // ---------------------------------------------------------------------------
 
-export const McpxConfigSchema = z.object({
+export const FleetmcpConfigSchema = z.object({
   version: z.literal(1).default(1),
   servers: z.record(z.string(), ServerConfigSchema).default({}),
 });
@@ -39,4 +39,4 @@ export const McpxConfigSchema = z.object({
 export type StdioServerConfig = z.infer<typeof StdioServerConfigSchema>;
 export type HttpServerConfig = z.infer<typeof HttpServerConfigSchema>;
 export type ServerConfig = z.infer<typeof ServerConfigSchema>;
-export type McpxConfig = z.infer<typeof McpxConfigSchema>;
+export type FleetmcpConfig = z.infer<typeof FleetmcpConfigSchema>;

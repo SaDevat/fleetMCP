@@ -90,14 +90,14 @@ export function buildUsageExample(
   toolName: string,
   inputSchema: unknown,
 ): string {
-  if (!isRecord(inputSchema)) return `mcpx call ${target} ${toolName}`;
+  if (!isRecord(inputSchema)) return `fleetmcp call ${target} ${toolName}`;
 
   const properties = inputSchema["properties"];
   const required = asStringArray(inputSchema["required"]);
   if (!isRecord(properties) || required.length === 0) {
-    return `mcpx call ${target} ${toolName}`;
+    return `fleetmcp call ${target} ${toolName}`;
   }
 
   const args = required.map((key) => `${key}=${exampleValue(properties[key])}`);
-  return `mcpx call ${target} ${toolName} ${args.join(" ")}`;
+  return `fleetmcp call ${target} ${toolName} ${args.join(" ")}`;
 }

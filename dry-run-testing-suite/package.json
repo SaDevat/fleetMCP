@@ -10,6 +10,6 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "mcpx": "file:.."
+    "fleetmcp": "file:.."
   }
 }

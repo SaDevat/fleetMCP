@@ -1,6 +1,6 @@
 import { test, expect, describe, beforeAll, afterAll } from "bun:test";
 
-async function mcpx(...args: string[]): Promise<string> {
+async function fleetmcp(...args: string[]): Promise<string> {
   const proc = Bun.spawn(["bun", "run", "src/index.ts", ...args], {
     stdout: "pipe",
     stderr: "pipe",
@@ -13,54 +13,54 @@ async function mcpx(...args: string[]): Promise<string> {
   ]);
 
   if (exitCode !== 0) {
-    throw new Error(`mcpx exited with code ${exitCode}\nstderr: ${stderr}`);
+    throw new Error(`fleetmcp exited with code ${exitCode}\nstderr: ${stderr}`);
   }
 
   return stdout;
 }
 
-describe("mcpx config", () => {
+describe("fleetmcp config", () => {
   beforeAll(async () => {
     // Ensure dummy server exists for tests
     try {
-      await mcpx("config", "add", "dummy", "-t", "stdio", "-c", "bun", "-a", "test/echo-server.ts");
+      await fleetmcp("config", "add", "dummy", "-t", "stdio", "-c", "bun", "-a", "test/echo-server.ts");
     } catch {
       // May already exist
     }
   });
 
   test("config list shows table", async () => {
-    const out = await mcpx("config", "list");
+    const out = await fleetmcp("config", "list");
     expect(out).toContain("Alias");
     expect(out).toContain("dummy");
   });
 
   test("config add + remove roundtrip", async () => {
-    await mcpx("config", "add", "test-temp", "-t", "stdio", "-c", "echo", "-a", "hello");
-    const list = await mcpx("config", "list");
+    await fleetmcp("config", "add", "test-temp", "-t", "stdio", "-c", "echo", "-a", "hello");
+    const list = await fleetmcp("config", "list");
     expect(list).toContain("test-temp");
 
-    await mcpx("config", "remove", "test-temp");
-    const list2 = await mcpx("config", "list");
+    await fleetmcp("config", "remove", "test-temp");
+    const list2 = await fleetmcp("config", "list");
     expect(list2).not.toContain("test-temp");
   });
 
   test("config check validates env vars", async () => {
-    const out = await mcpx("config", "check");
+    const out = await fleetmcp("config", "check");
     expect(out).toContain("dummy");
     expect(out).toMatch(/✓|✗/);
   });
 });
 
-describe("mcpx inspect", () => {
+describe("fleetmcp inspect", () => {
   test("inspect shows echo tool", async () => {
-    const out = await mcpx("inspect", "dummy");
+    const out = await fleetmcp("inspect", "dummy");
     expect(out).toContain("echo");
     expect(out).toContain("echo-test-server");
   });
 
   test("inspect with --filter narrows results", async () => {
-    const out = await mcpx("inspect", "dummy", "--filter", "echo");
+    const out = await fleetmcp("inspect", "dummy", "--filter", "echo");
     expect(out).toContain("echo");
   });
 
@@ -74,27 +74,27 @@ describe("mcpx inspect", () => {
   });
 });
 
-describe("mcpx call", () => {
+describe("fleetmcp call", () => {
   test("call echo with key=value args", async () => {
-    const out = await mcpx("call", "dummy", "echo", "text=hello");
+    const out = await fleetmcp("call", "dummy", "echo", "text=hello");
     expect(out).toContain("hello");
   });
 
   test("call echo with JSON arg", async () => {
-    const out = await mcpx("call", "dummy", "echo", '{"text":"world"}');
+    const out = await fleetmcp("call", "dummy", "echo", '{"text":"world"}');
     expect(out).toContain("world");
   });
 
   test("call with multiple args", async () => {
-    const out = await mcpx("call", "dummy", "echo", "text=test", "data=value");
+    const out = await fleetmcp("call", "dummy", "echo", "text=test", "data=value");
     expect(out).toContain("test");
     expect(out).toContain("value");
   });
 });
 
-describe("mcpx test", () => {
+describe("fleetmcp test", () => {
   test("test passes all checks", async () => {
-    const out = await mcpx("test", "dummy");
+    const out = await fleetmcp("test", "dummy");
     expect(out).toContain("All checks passed");
     expect(out).toContain("Connection handshake");
     expect(out).toContain("PASS");
@@ -120,7 +120,7 @@ describe("mcpx test", () => {
   });
 });
 
-describe("mcpx proxy", () => {
+describe("fleetmcp proxy", () => {
   test("proxy starts and responds to health check", async () => {
     const proxyProc = Bun.spawn(["bun", "run", "src/index.ts", "proxy", "-p", "14390"], {
       stdout: "pipe",
@@ -135,7 +135,7 @@ describe("mcpx proxy", () => {
       expect(health.status).toBe(200);
 
       const data = (await health.json()) as Record<string, unknown>;
-      expect(data["name"]).toBe("mcpx-proxy");
+      expect(data["name"]).toBe("fleetmcp-proxy");
       expect(data["tools"]).toBeGreaterThan(0);
     } finally {
       proxyProc.kill();
