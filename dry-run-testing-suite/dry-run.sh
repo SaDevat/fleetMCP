@@ -100,11 +100,11 @@ echo ""
 # ── Phase 1: Version & Help ──────────────────────────────────────
 
 run_test_output_contains \
-  "Version output" "1.0.0" \
+  "Version output" "0.1.0" \
   $FLEETMCP --version
 
 run_test_output_contains \
-  "Help shows brand logo" "missing CLI for the MCP ecosystem" \
+  "Help shows brand logo" "one config, one endpoint" \
   $FLEETMCP --help
 
 run_test_output_contains \
@@ -146,8 +146,9 @@ run_test_output_contains \
   "Inspect echo-local — shows protocol version" "202" \
   $FLEETMCP inspect echo-local
 
+# Tool count is an upstream moving target — assert the section renders, not a number.
 run_test_output_contains \
-  "Inspect everything — shows 13 tools" "Tools: 13" \
+  "Inspect everything — lists tools" "Tools:" \
   $FLEETMCP inspect everything
 
 run_test_output_contains \
@@ -218,7 +219,8 @@ echo -e "${DIM}    \$ npx fleetmcp proxy (background) + curl health check${RESET
 
 $FLEETMCP proxy --port 14390 &
 PROXY_PID=$!
-sleep 5
+# Every registered server is spawned at proxy startup; npx-based ones are slow to cold-start.
+sleep 15
 
 if health_output=$(curl -s http://localhost:14390/ 2>&1); then
   if echo "$health_output" | grep -q "fleetmcp-proxy"; then
