@@ -1,5 +1,6 @@
 import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
-import { join } from "node:path";
+import { join, isAbsolute, resolve } from "node:path";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { FleetmcpConfigSchema, type FleetmcpConfig, type ServerConfig } from "../types/config.ts";
 
@@ -52,6 +53,37 @@ export function resolveServerConfig(raw: ServerConfig): ServerConfig {
     return { ...raw, headers: resolvedHeaders };
   }
   return raw;
+}
+
+// ---------------------------------------------------------------------------
+// Path pinning
+// ---------------------------------------------------------------------------
+
+/**
+ * Stdio servers are spawned with the caller's working directory, so a relative
+ * path in `command` or `args` resolves differently depending on where fleetmcp
+ * happens to be invoked from — the same alias works from the project root and
+ * fails from anywhere else.
+ *
+ * Pinning has to happen at registration: the CWD the user typed `config add`
+ * in is the only moment the intended target is knowable. By read time that
+ * information is gone.
+ *
+ * ponytail: "is this a path" is decided by whether it exists on disk right now.
+ * An argument that merely looks like a filename is left untouched, so flags
+ * like `-y` and package specs like `@scope/pkg` pass through.
+ */
+export function pinStdioPaths(
+  command: string,
+  args: string[],
+): { command: string; args: string[] } {
+  const pin = (value: string): string => {
+    if (value.length === 0 || isAbsolute(value)) return value;
+    const candidate = resolve(process.cwd(), value);
+    return existsSync(candidate) ? candidate : value;
+  };
+
+  return { command: pin(command), args: args.map(pin) };
 }
 
 // ---------------------------------------------------------------------------

@@ -2,7 +2,13 @@ import { Command } from "commander";
 import Table from "cli-table3";
 import chalk from "chalk";
 import * as p from "@clack/prompts";
-import { getConfig, saveConfig, ensureFleetmcpDir, resolveServerConfig } from "../core/config.ts";
+import {
+  getConfig,
+  saveConfig,
+  ensureFleetmcpDir,
+  resolveServerConfig,
+  pinStdioPaths,
+} from "../core/config.ts";
 import { FleetmcpConfigSchema, ServerConfigSchema } from "../types/config.ts";
 import type { ServerConfig } from "../types/config.ts";
 import { prettyJson } from "../formatters/json.ts";
@@ -204,10 +210,17 @@ configCommand
           }
         }
 
+        const pinned = pinStdioPaths(
+          command as string,
+          (argsInput as string).trim().length > 0
+            ? (argsInput as string).trim().split(/\s+/)
+            : [],
+        );
+
         serverConfig = ServerConfigSchema.parse({
           type: "stdio",
-          command: command as string,
-          args: (argsInput as string).trim().length > 0 ? (argsInput as string).trim().split(/\s+/) : [],
+          command: pinned.command,
+          args: pinned.args,
           env: envRecord,
         });
       } else {
@@ -304,10 +317,15 @@ configCommand
         const cmd = options["command"] as string;
         validateCommand(cmd);
 
+        const pinned = pinStdioPaths(
+          cmd,
+          options["args"] ? (options["args"] as string).split(" ") : [],
+        );
+
         rawServer = {
           type: "stdio",
-          command: cmd,
-          args: options["args"] ? (options["args"] as string).split(" ") : [],
+          command: pinned.command,
+          args: pinned.args,
           env: envRecord,
         };
       } else if (typeOpt === "http") {
