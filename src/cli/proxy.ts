@@ -24,6 +24,12 @@ import packageJson from "../../package.json" with { type: "json" };
 interface SubClient {
   alias: string;
   client: Awaited<ReturnType<typeof createMcpClient>>;
+  /** Set when the transport closes; cleared on a successful reconnect. */
+  dead: boolean;
+  /** Epoch ms of the last reconnect attempt, for backoff. */
+  lastAttempt: number;
+  /** Consecutive failed reconnects; widens the backoff window. */
+  failures: number;
 }
 
 interface NamespacedTool {
@@ -167,7 +173,14 @@ export const proxyCommand = new Command("proxy")
         try {
           spinner.text = `Connecting to ${chalk.cyan(alias)}...`;
           const client = await createMcpClient({ alias });
-          subClients.push({ alias, client });
+          const sub: SubClient = { alias, client, dead: false, lastAttempt: 0, failures: 0 };
+          // Protocol.connect() forwards transport.onclose here, and
+          // StdioClientTransport fires it on the child's 'close' event — so a
+          // crashed sub-server marks itself rather than being discovered on use.
+          client.onclose = () => {
+            sub.dead = true;
+          };
+          subClients.push(sub);
 
           const { tools } = await client.listTools();
           for (const tool of tools) {
@@ -209,6 +222,70 @@ export const proxyCommand = new Command("proxy")
       const clientMap = new Map<string, SubClient>();
       for (const sub of subClients) {
         clientMap.set(sub.alias, sub);
+      }
+
+      // ---------------------------------------------------------------------
+      // Sub-server reconnect
+      //
+      // Sub-servers are connected once at startup and held warm. A stdio child
+      // that dies — crash, OOM, npx cache eviction — would otherwise fail every
+      // call to its tools until the proxy was restarted, which makes "always
+      // warm" false the moment anything falls over.
+      // ---------------------------------------------------------------------
+
+      /** Replaces this alias's entries in the shared tool map and list. */
+      async function refreshTools(sub: SubClient): Promise<void> {
+        const { tools } = await sub.client.listTools();
+
+        for (let i = allNamespacedTools.length - 1; i >= 0; i--) {
+          if (allNamespacedTools[i]?.alias === sub.alias) allNamespacedTools.splice(i, 1);
+        }
+        for (const [name, nt] of toolMap) {
+          if (nt.alias === sub.alias) toolMap.delete(name);
+        }
+
+        for (const tool of tools) {
+          const nt: NamespacedTool = {
+            namespacedName: `${sub.alias}_${tool.name}`,
+            alias: sub.alias,
+            originalName: tool.name,
+            tool,
+          };
+          allNamespacedTools.push(nt);
+          toolMap.set(nt.namespacedName, nt);
+        }
+      }
+
+      /**
+       * Returns true if the sub-server is usable. Reconnects a dead one at most
+       * once per backoff window so a crash-looping server isn't hammered.
+       *
+       * ponytail: exponential 1s→30s, no jitter. Single-process proxy with one
+       * caller, so there is no thundering herd to spread out.
+       */
+      async function ensureLive(sub: SubClient): Promise<boolean> {
+        if (!sub.dead) return true;
+
+        const backoffMs = Math.min(1000 * 2 ** sub.failures, 30_000);
+        if (Date.now() - sub.lastAttempt < backoffMs) return false;
+        sub.lastAttempt = Date.now();
+
+        try {
+          const client = await createMcpClient({ alias: sub.alias });
+          client.onclose = () => {
+            sub.dead = true;
+          };
+          sub.client = client;
+          sub.dead = false;
+          sub.failures = 0;
+          // The server may have changed while it was down.
+          await refreshTools(sub);
+          console.log(chalk.green(`Reconnected to ${chalk.cyan(sub.alias)}`));
+          return true;
+        } catch {
+          sub.failures++;
+          return false;
+        }
       }
 
       // MCP requires an init handshake before tool calls, so the proxy
@@ -278,6 +355,18 @@ export const proxyCommand = new Command("proxy")
             return {
               content: [
                 { type: "text" as const, text: `Server ${entry.alias} disconnected` },
+              ],
+              isError: true,
+            };
+          }
+
+          if (!(await ensureLive(sub))) {
+            return {
+              content: [
+                {
+                  type: "text" as const,
+                  text: `Server ${entry.alias} is down and reconnect failed (${sub.failures} attempt(s)). Retrying with backoff.`,
+                },
               ],
               isError: true,
             };
