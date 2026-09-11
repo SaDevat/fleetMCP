@@ -10,6 +10,9 @@ import {
   CallToolRequestSchema,
   ListPromptsRequestSchema,
   GetPromptRequestSchema,
+  ListResourcesRequestSchema,
+  ReadResourceRequestSchema,
+  ListResourceTemplatesRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { getConfig } from "../core/config.ts";
@@ -288,6 +291,37 @@ export const proxyCommand = new Command("proxy")
         return best;
       }
 
+      // ---------------------------------------------------------------------
+      // Resource addressing
+      //
+      // Tools and prompts namespace by name; resources are addressed by URI,
+      // and two servers can expose the same one. The alias is carried inside
+      // the URI so decoding is prefix-stripping rather than a lookup — nothing
+      // to keep in sync, and collisions are impossible by construction.
+      //
+      // Safe because the spec treats URIs as opaque: a client lists them and
+      // hands the value back to resources/read untouched. See #6.
+      // ---------------------------------------------------------------------
+
+      const URI_PREFIX = "fleet://";
+
+      function wrapUri(alias: string, uri: string): string {
+        return `${URI_PREFIX}${alias}/${uri}`;
+      }
+
+      function unwrapUri(wrapped: string): { sub: SubClient; uri: string } | undefined {
+        if (!wrapped.startsWith(URI_PREFIX)) return undefined;
+
+        const rest = wrapped.slice(URI_PREFIX.length);
+        const slash = rest.indexOf("/");
+        if (slash === -1) return undefined;
+
+        const sub = clientMap.get(rest.slice(0, slash));
+        if (!sub) return undefined;
+
+        return { sub, uri: rest.slice(slash + 1) };
+      }
+
       async function ensureLive(sub: SubClient): Promise<boolean> {
         if (!sub.dead) return true;
 
@@ -353,8 +387,82 @@ export const proxyCommand = new Command("proxy")
         const server = new Server(
           { name: "fleetmcp-proxy", version: packageJson.version },
           // Declared bare: subscribe/listChanged are not forwarded.
-          { capabilities: { tools: {}, prompts: {} } },
+          { capabilities: { tools: {}, prompts: {}, resources: {} } },
         );
+
+        server.setRequestHandler(ListResourcesRequestSchema, async () => {
+          const resources = [];
+
+          for (const sub of subClients) {
+            if (!sub.client.getServerCapabilities()?.resources) continue;
+            if (!(await ensureLive(sub))) continue;
+
+            try {
+              const result = await sub.client.listResources();
+              for (const resource of result.resources) {
+                resources.push({
+                  ...resource,
+                  uri: wrapUri(sub.alias, resource.uri),
+                  description: `[${sub.alias}] ${resource.description ?? ""}`.trim(),
+                });
+              }
+            } catch {
+              // One sub-server failing shouldn't blank the fleet's list.
+            }
+          }
+
+          return { resources };
+        });
+
+        server.setRequestHandler(ListResourceTemplatesRequestSchema, async () => {
+          const resourceTemplates = [];
+
+          for (const sub of subClients) {
+            if (!sub.client.getServerCapabilities()?.resources) continue;
+            if (!(await ensureLive(sub))) continue;
+
+            try {
+              const result = await sub.client.listResourceTemplates();
+              for (const template of result.resourceTemplates) {
+                resourceTemplates.push({
+                  ...template,
+                  // The client expands the {placeholder} and sends back a URI
+                  // that was never in any list — the alias has to travel in
+                  // the string for that to resolve.
+                  uriTemplate: wrapUri(sub.alias, template.uriTemplate),
+                  description: `[${sub.alias}] ${template.description ?? ""}`.trim(),
+                });
+              }
+            } catch {
+              // Same: a failing sub-server is skipped, not fatal.
+            }
+          }
+
+          return { resourceTemplates };
+        });
+
+        server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
+          const target = unwrapUri(request.params.uri);
+          if (!target) {
+            throw new Error(`Unknown resource: ${request.params.uri}`);
+          }
+
+          if (!(await ensureLive(target.sub))) {
+            throw new Error(`Server ${target.sub.alias} is down`);
+          }
+
+          const result = await target.sub.client.readResource({ uri: target.uri });
+
+          // The sub-server echoes its own URI back; rewrite it so the client
+          // keeps holding the handle it was given.
+          return {
+            ...result,
+            contents: result.contents.map((content) => ({
+              ...content,
+              uri: wrapUri(target.sub.alias, String(content.uri)),
+            })),
+          };
+        });
 
         server.setRequestHandler(ListPromptsRequestSchema, async () => {
           const prompts = [];

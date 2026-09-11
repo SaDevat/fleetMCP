@@ -153,12 +153,11 @@ not a full conformance suite — see *Limitations*.
 
 Known and honest, as of v0.1.0:
 
-- **The proxy forwards tools only.** Sub-server resources and prompts are not
-  exposed through the aggregate endpoint yet.
-- **Proxy sessions are never reaped.** The session map grows for the lifetime of
-  the process — fine for a desktop session, not yet for a long-running host.
-- **No sub-server reconnect.** If a stdio child process dies, its tools keep
-  failing until the proxy is restarted.
+- **Resource subscriptions are not forwarded.** The proxy exposes resources and
+  prompts, but `subscribe` and `listChanged` are not passed through to
+  sub-servers, so you will not get change notifications.
+- **Aggregate lists are not paginated.** A `list` request returns everything from
+  every server in one response. Fine for a personal fleet, not for thousands.
 - **Auth is static only.** Bearer tokens and headers via `${VAR}` interpolation
   work; OAuth is not implemented.
 - **Bun-only.** Bun-native APIs mean this will not run under Node today.
