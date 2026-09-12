@@ -8,6 +8,8 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import {
   ListToolsRequestSchema,
   CallToolRequestSchema,
+  ListPromptsRequestSchema,
+  GetPromptRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { getConfig } from "../core/config.ts";
@@ -263,6 +265,29 @@ export const proxyCommand = new Command("proxy")
        * ponytail: exponential 1s→30s, no jitter. Single-process proxy with one
        * caller, so there is no thundering herd to spread out.
        */
+      /**
+       * Resolves `<alias>_<name>` back to its sub-server.
+       *
+       * Aliases may themselves contain underscores, so this matches against
+       * known aliases and takes the longest one that fits — splitting on the
+       * first separator would mis-route when one alias prefixes another.
+       */
+      function splitNamespaced(
+        namespaced: string,
+      ): { sub: SubClient; name: string } | undefined {
+        let best: { sub: SubClient; name: string } | undefined;
+
+        for (const sub of subClients) {
+          const prefix = `${sub.alias}_`;
+          if (!namespaced.startsWith(prefix)) continue;
+          if (best === undefined || sub.alias.length > best.sub.alias.length) {
+            best = { sub, name: namespaced.slice(prefix.length) };
+          }
+        }
+
+        return best;
+      }
+
       async function ensureLive(sub: SubClient): Promise<boolean> {
         if (!sub.dead) return true;
 
@@ -327,8 +352,49 @@ export const proxyCommand = new Command("proxy")
       function createSession(): ProxySession {
         const server = new Server(
           { name: "fleetmcp-proxy", version: packageJson.version },
-          { capabilities: { tools: {} } },
+          // Declared bare: subscribe/listChanged are not forwarded.
+          { capabilities: { tools: {}, prompts: {} } },
         );
+
+        server.setRequestHandler(ListPromptsRequestSchema, async () => {
+          const prompts = [];
+
+          for (const sub of subClients) {
+            if (!sub.client.getServerCapabilities()?.prompts) continue;
+            if (!(await ensureLive(sub))) continue;
+
+            try {
+              const result = await sub.client.listPrompts();
+              for (const prompt of result.prompts) {
+                prompts.push({
+                  ...prompt,
+                  name: `${sub.alias}_${prompt.name}`,
+                  description: `[${sub.alias}] ${prompt.description ?? ""}`.trim(),
+                });
+              }
+            } catch {
+              // A sub-server failing its list shouldn't blank the whole fleet's.
+            }
+          }
+
+          return { prompts };
+        });
+
+        server.setRequestHandler(GetPromptRequestSchema, async (request) => {
+          const target = splitNamespaced(request.params.name);
+          if (!target) {
+            throw new Error(`Unknown prompt: ${request.params.name}`);
+          }
+
+          if (!(await ensureLive(target.sub))) {
+            throw new Error(`Server ${target.sub.alias} is down`);
+          }
+
+          return target.sub.client.getPrompt({
+            name: target.name,
+            ...(request.params.arguments ? { arguments: request.params.arguments } : {}),
+          });
+        });
 
         server.setRequestHandler(ListToolsRequestSchema, async () => ({
           tools: allNamespacedTools.map((nt) => ({
