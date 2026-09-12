@@ -119,12 +119,16 @@ export const proxyCommand = new Command("proxy")
     const subClients: SubClient[] = [];
     let db: Database | undefined;
     let httpServer: ReturnType<typeof Bun.serve> | undefined;
+    // Set once the session map and its sweep exist; called by cleanup().
+    let closeSessions: (() => void) | undefined;
 
     async function cleanup(): Promise<void> {
       if (httpServer) {
         httpServer.stop(true);
         httpServer = undefined;
       }
+      closeSessions?.();
+      closeSessions = undefined;
       for (const sub of subClients) {
         await sub.client.close().catch(() => {});
       }
@@ -214,9 +218,34 @@ export const proxyCommand = new Command("proxy")
       interface ProxySession {
         server: Server;
         transport: WebStandardStreamableHTTPServerTransport;
+        /** Touched on every request; drives the idle sweep below. */
+        lastSeen: number;
       }
 
       const sessions = new Map<string, ProxySession>();
+
+      // A client that disconnects without sending DELETE leaves no event to
+      // hook, so elapsed time is the only signal we have.
+      // ponytail: fixed 30-min idle window, swept every 5 min. Make it a flag
+      // only if someone actually needs a different window.
+      const SESSION_IDLE_MS = 30 * 60_000;
+      const sessionSweep = setInterval(() => {
+        const cutoff = Date.now() - SESSION_IDLE_MS;
+        for (const [id, session] of sessions) {
+          if (session.lastSeen < cutoff) {
+            sessions.delete(id);
+            void session.transport.close().catch(() => {});
+          }
+        }
+      }, 5 * 60_000);
+
+      closeSessions = () => {
+        clearInterval(sessionSweep);
+        for (const session of sessions.values()) {
+          void session.transport.close().catch(() => {});
+        }
+        sessions.clear();
+      };
 
       function createSession(): ProxySession {
         const server = new Server(
@@ -308,15 +337,25 @@ export const proxyCommand = new Command("proxy")
           }
         });
 
+        let sessionId: string | undefined;
+
         const transport = new WebStandardStreamableHTTPServerTransport({
           sessionIdGenerator: () => crypto.randomUUID(),
           enableJsonResponse: true,
-          onsessioninitialized: (sessionId) => {
-            sessions.set(sessionId, { server, transport });
+          onsessioninitialized: (id) => {
+            sessionId = id;
+            sessions.set(id, { server, transport, lastSeen: Date.now() });
           },
         });
 
-        return { server, transport };
+        // The SDK funnels every termination path — DELETE, transport error,
+        // shutdown — through close(), which fires onclose. One hook covers
+        // them all; without it the map entry outlives the session forever.
+        transport.onclose = () => {
+          if (sessionId !== undefined) sessions.delete(sessionId);
+        };
+
+        return { server, transport, lastSeen: Date.now() };
       }
 
       // 4. Start Bun HTTP server with session-aware routing
@@ -331,6 +370,7 @@ export const proxyCommand = new Command("proxy")
             if (sessionId) {
               const existing = sessions.get(sessionId);
               if (existing) {
+                existing.lastSeen = Date.now();
                 return existing.transport.handleRequest(req);
               }
 
