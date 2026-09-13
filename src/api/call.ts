@@ -12,9 +12,8 @@ import { listAllTools } from "../cli/inspect.ts";
  * Calls route through the same warm `clientMap` pool the /mcp endpoint uses
  * (never a fresh client), so a call made here is a real fleet call -- it gets
  * logged to proxy_logs exactly like MCP traffic, and shows up in Traffic with
- * no extra wiring. logEntry() itself lives in cli/proxy.ts and isn't exported
- * (that file is off-limits to this branch), so the insert + logBus emit are
- * reproduced here against the same schema.
+ * no extra wiring. The write itself goes through `logEntry` in core/log.ts,
+ * which the proxy's own callTool handler also uses: one INSERT, no drift.
  */
 
 export interface CallToolEntry {
