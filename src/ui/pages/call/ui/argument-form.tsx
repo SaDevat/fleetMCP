@@ -137,6 +137,16 @@ function buildArguments(fields: FieldSpec[], wholeRaw: boolean, values: Record<s
 
 /** Display-only: renders whatever is currently typed as `key=value`, without
  * enforcing correctness -- buildArguments() is the source of truth at submit. */
+/**
+ * This line is presented as copy-pasteable, so it has to survive a shell. An
+ * unquoted value containing a space silently becomes two arguments, which is
+ * exactly the kind of detail that makes "teaches the CLI" a false claim.
+ */
+function shellQuote(value: string): string {
+  if (/^[A-Za-z0-9_./:@=-]+$/.test(value)) return value;
+  return `'${value.replaceAll("'", `'\\''`)}'`;
+}
+
 function previewArgsLine(fields: FieldSpec[], wholeRaw: boolean, values: Record<string, unknown>): string {
   if (wholeRaw) {
     const raw = String(values[RAW_KEY] ?? "").trim();
@@ -149,7 +159,7 @@ function previewArgsLine(fields: FieldSpec[], wholeRaw: boolean, values: Record<
       continue;
     }
     const s = String(values[f.key] ?? "").trim();
-    if (s !== "") parts.push(`${f.key}=${s}`);
+    if (s !== "") parts.push(`${f.key}=${shellQuote(s)}`);
   }
   return parts.join(" ");
 }
@@ -335,7 +345,10 @@ export function ArgumentForm({ alias, tool }: ArgumentFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="cap">
-                      arguments (raw JSON) <span className="mono call-ceiling">// ponytail: schema has oneOf/anyOf/$ref, escalation ceiling reached</span>
+                      {/* ponytail: no oneOf/anyOf/$ref resolution -- the whole
+                          argument list degrades to one raw-JSON field. Upgrade
+                          path is a schema resolver, not more special cases. */}
+                      arguments <span className="mono call-ceiling">raw JSON — this tool's schema has no flat field list</span>
                     </FormLabel>
                     <FormControl>
                       <textarea {...field} value={String(field.value ?? "")} className="mono" rows={6} />
@@ -395,7 +408,8 @@ export function ArgumentForm({ alias, tool }: ArgumentFormProps) {
                         <FormLabel className="cap">
                           {f.key}
                           {f.required ? " *" : ""}
-                          {f.kind === "json" ? <span className="mono call-ceiling"> // ponytail: array/object field, raw JSON</span> : null}
+                          {/* ponytail: array/object fields are not generated, only accepted as JSON */}
+                          {f.kind === "json" ? <span className="mono call-ceiling"> raw JSON</span> : null}
                         </FormLabel>
                         <FormControl>
                           {f.kind === "json" ? (
