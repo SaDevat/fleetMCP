@@ -1,14 +1,33 @@
-import { createSlice } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-/**
- * Placeholder slice -- this screen has no state yet. Exists so the store's
- * static reducer map (see @/ui/store.ts) doesn't need touching again when
- * this screen is built out.
- */
+interface CallState {
+  selectedAlias: string | null;
+  selectedTool: string | null;
+}
+
+const initialState: CallState = {
+  selectedAlias: null,
+  selectedTool: null,
+};
+
 const callSlice = createSlice({
   name: "call",
-  initialState: {},
-  reducers: {},
+  initialState,
+  reducers: {
+    selectServer(state, action: PayloadAction<string>) {
+      state.selectedAlias = action.payload;
+      state.selectedTool = null;
+    },
+    selectTool(state, action: PayloadAction<string>) {
+      state.selectedTool = action.payload;
+    },
+  },
+  selectors: {
+    selectSelectedAlias: (state) => state.selectedAlias,
+    selectSelectedTool: (state) => state.selectedTool,
+  },
 });
 
+export const { selectServer, selectTool } = callSlice.actions;
+export const { selectSelectedAlias, selectSelectedTool } = callSlice.selectors;
 export default callSlice.reducer;

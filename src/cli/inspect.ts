@@ -38,7 +38,7 @@ function isHttpUrl(value: string): boolean {
   }
 }
 
-async function listAllTools(client: Awaited<ReturnType<typeof createMcpClient>>): Promise<Tool[]> {
+export async function listAllTools(client: Awaited<ReturnType<typeof createMcpClient>>): Promise<Tool[]> {
   const tools: Tool[] = [];
   let cursor: string | undefined;
 
