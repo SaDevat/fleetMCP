@@ -413,7 +413,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function mapExternalEntry(raw: unknown): ServerConfig | undefined {
+export function mapExternalEntry(raw: unknown): ServerConfig | undefined {
   if (!isRecord(raw)) return undefined;
 
   if (typeof raw["command"] === "string" && raw["command"].length > 0) {
@@ -530,7 +530,7 @@ configCommand
 // `fleetmcp config export [--format cursor|claude]`
 // ---------------------------------------------------------------------------
 
-function toClaudeFormat(servers: Record<string, ServerConfig>): Record<string, unknown> {
+export function toClaudeFormat(servers: Record<string, ServerConfig>): Record<string, unknown> {
   const mcpServers: Record<string, unknown> = {};
   for (const [alias, serverConfig] of Object.entries(servers)) {
     if (serverConfig.type === "stdio") {
@@ -553,7 +553,7 @@ function toClaudeFormat(servers: Record<string, ServerConfig>): Record<string, u
   return { mcpServers };
 }
 
-function toCursorFormat(servers: Record<string, ServerConfig>): Record<string, unknown> {
+export function toCursorFormat(servers: Record<string, ServerConfig>): Record<string, unknown> {
   const mcpServers: Record<string, unknown> = {};
   for (const [alias, serverConfig] of Object.entries(servers)) {
     if (serverConfig.type === "stdio") {
