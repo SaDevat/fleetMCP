@@ -30,15 +30,18 @@
     "typecheck": "tsc --noEmit",
     "build": "bun run scripts/build.ts",
     "test": "bun test",
-    "ui": "shadcn"
+    "ui": "shadcn",
+    "arch": "steiger ./src/ui"
   },
   "devDependencies": {
+    "@feature-sliced/steiger-plugin": "^0.7.0",
     "@types/bun": "latest",
     "@types/node": "^25.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "bun-plugin-tailwind": "^0.1.2",
     "shadcn": "^4.21.0",
+    "steiger": "^0.6.0",
     "tailwindcss": "^4.3.3"
   },
   "peerDependencies": {

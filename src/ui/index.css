@@ -19,6 +19,8 @@
   --error: #d75e50;
   --warning: #d99a2b;
   --success: #5fa777;
+  /* Plate frame's dot grid. Non-text decoration, not contrast-checked. */
+  --dot: rgba(232, 234, 229, 0.055);
 
   /* shadcn semantic mapping */
   --background: var(--ground);
@@ -131,4 +133,453 @@
 .font-prose-italic {
   font-style: italic;
   font-size: max(1.2rem, 1em);
+}
+
+/* ---------------------------------------------------------------------------
+ * Design system -- FleetMCP - Traffic.dc.html, reproduced near-verbatim.
+ * Every screen reuses these classes; do not fork per-screen variants.
+ *
+ * Color remap from the prototype (D-016): neutrals carry interaction, hues
+ * carry status. The prototype's `--accent` red is NOT reproduced anywhere --
+ * every rule that used it below substitutes `--ink` (interaction) or a status
+ * hue (`--error`, `--success`) per the issue's remap table.
+ * ------------------------------------------------------------------------ */
+
+::selection {
+  background: rgba(232, 234, 229, 0.14);
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@keyframes rowin {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes beat {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.32;
+  }
+}
+.rowin {
+  animation: rowin 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.beat {
+  animation: beat 2.1s ease-in-out infinite;
+}
+
+.cap {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--graphite);
+}
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Plate frame: 1px rule border, radial dot grid, 7px corner ticks. */
+.plate {
+  position: relative;
+  border: 1px solid var(--rule);
+  background-color: var(--ground);
+  background-image: radial-gradient(var(--dot) 0.5px, transparent 0.5px);
+  background-size: 10px 10px;
+  background-position: -1px -1px;
+}
+.plate-tick {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-color: var(--rule-strong);
+  border-style: solid;
+  border-width: 0;
+}
+.plate-tick-tl {
+  top: 6px;
+  left: 6px;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.plate-tick-tr {
+  top: 6px;
+  right: 6px;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.plate-tick-bl {
+  bottom: 6px;
+  left: 6px;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.plate-tick-br {
+  bottom: 6px;
+  right: 6px;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+.shell {
+  display: grid;
+  grid-template-columns: 186px minmax(0, 1fr);
+  /* A bounded height, not just a floor. `min-height` lets the grid grow to fit
+     its content, which leaves the row list's `overflow-y:auto` with nothing to
+     clip against -- the whole document scrolls instead, the plate stops being a
+     fixed-size figure, and TanStack Virtual renders every row because its
+     scroll element is never shorter than its content. */
+  height: min(84vh, 780px);
+}
+
+/* Flex and grid children default to `min-height:auto`, so a tall descendant
+   pushes them past their parent instead of scrolling inside it. Zeroing it down
+   the chain is what actually lets the row list scroll. */
+.shell > main,
+.shell > main > * {
+  min-height: 0;
+}
+
+.sidebar {
+  border-right: 1px solid var(--rule);
+  padding: 1.5rem 1.15rem 1.3rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: transparent;
+}
+.sidebar-wordmark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  letter-spacing: 0.005em;
+  color: var(--ink);
+}
+.sidebar-caption {
+  font-size: 0.645rem;
+  letter-spacing: 0.05em;
+  color: var(--graphite);
+  margin-top: 0.26rem;
+}
+.rule-h {
+  height: 1px;
+  background: var(--rule);
+}
+.rule-h-strong {
+  height: 1px;
+  background: var(--rule-strong);
+}
+.sidebar-stats {
+  font-size: 0.645rem;
+  line-height: 1.75;
+  color: var(--graphite);
+}
+
+/* Nav item: left rule scaleY on hover/active (was --accent, now --ink). */
+.nav-i {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  color: var(--graphite);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  padding: 0.44rem 0 0.44rem 1.15rem;
+  transition: color 0.2s ease;
+}
+.nav-i:hover {
+  color: var(--ink);
+}
+.nav-i::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.52rem;
+  bottom: 0.52rem;
+  width: 1.5px;
+  background: var(--ink);
+  transform: scaleY(0);
+  transform-origin: center;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.nav-i:hover::before {
+  transform: scaleY(0.55);
+}
+.nav-i[data-on] {
+  color: var(--ink);
+}
+.nav-i[data-on]::before {
+  transform: scaleY(1);
+}
+
+.navbar {
+  display: none;
+}
+@media (max-width: 880px) {
+  /* Milliseconds are the first thing to go: the fixed column tracks overflow a
+     narrow viewport, and a zero-width `tool` column hides the most important
+     field on the row. */
+  .t-ms {
+    display: none;
+  }
+
+  .shell {
+    grid-template-columns: 1fr !important;
+  }
+  .sidebar {
+    display: none !important;
+  }
+  .navbar {
+    display: block !important;
+  }
+  .navbar nav {
+    display: flex;
+    gap: 1.35rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .navbar nav::-webkit-scrollbar {
+    display: none;
+  }
+  .navbar .nav-i {
+    padding: 0.5rem 0 0.55rem;
+    white-space: nowrap;
+  }
+  .navbar .nav-i::before {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    height: 1.5px;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+  .navbar .nav-i:hover::before {
+    transform: scaleX(0.5);
+  }
+  .navbar .nav-i[data-on]::before {
+    transform: scaleX(1);
+  }
+  .tok {
+    display: none !important;
+  }
+  .trow,
+  .thead {
+    grid-template-columns: 12px 58px 52px minmax(64px, 1fr) 60px 28px !important;
+    gap: 0.4rem !important;
+  }
+}
+
+/* Filter chip: underline grows on hover/active (was --accent, now --ink). */
+.fchip {
+  background: none;
+  border: none;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: 0.735rem;
+  color: var(--graphite);
+  cursor: pointer;
+  padding: 0.2rem 0 0.3rem;
+  position: relative;
+  transition: color 0.2s ease;
+}
+.fchip:hover {
+  color: var(--ink);
+}
+.fchip[data-on] {
+  color: var(--ink);
+}
+.fchip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.fchip::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1.5px;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.fchip:hover::after {
+  transform: scaleX(0.4);
+}
+.fchip[data-on]::after {
+  transform: scaleX(1);
+}
+
+.thead {
+  display: grid;
+  grid-template-columns: 16px 96px 78px minmax(0, 1fr) 104px 96px 46px;
+  gap: 0.9rem;
+  align-items: baseline;
+  padding: 0.7rem 0 0.6rem;
+}
+
+.trow-wrap {
+  border-bottom: 1px solid var(--rule);
+}
+.trow-wrap[data-err] {
+  background: var(--raised);
+}
+
+/* Table row: left rule on hover/expand (was --accent, now --ink). Failed rows
+ * carry their own always-on 2px --ink rule -- structural, not hover-driven. */
+.trow {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.18s ease;
+  display: grid;
+  grid-template-columns: 16px 96px 78px minmax(0, 1fr) 104px 96px 46px;
+  gap: 0.9rem;
+  align-items: baseline;
+  padding: 0.62rem 0;
+  border-left: 2px solid transparent;
+}
+.trow:hover {
+  background: var(--surface);
+}
+.trow::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--ink);
+  transform: scaleY(0);
+  transition: transform 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.trow:hover::before {
+  transform: scaleY(1);
+}
+.trow[data-open] {
+  background: var(--surface);
+}
+.trow[data-open]::before {
+  transform: scaleY(1);
+}
+.trow[data-err] {
+  border-left-color: var(--ink);
+  padding-left: 0.5rem;
+}
+
+.caret {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+}
+
+.lat {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.lat-ms {
+  font-size: 0.735rem;
+  color: var(--ink);
+  min-width: 2.9rem;
+}
+.lat-track {
+  flex: 1;
+  height: 3px;
+  position: relative;
+  border-bottom: 1px solid var(--rule);
+}
+.lat-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+
+.mark {
+  font-family: var(--font-mono);
+  font-size: 0.71rem;
+}
+.mark-ok {
+  color: var(--graphite);
+  font-weight: 400;
+}
+/* Failure mark takes the error hue at weight 600 -- the one place a status
+ * hue appears in the table (D-016: hues carry status, never interaction). */
+.mark-err {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* Expanded drawer: 1.5px left rule (was --accent, now --ink). */
+.drawer {
+  padding: 0.2rem 0 1.3rem 1.9rem;
+  border-left: 1.5px solid var(--ink);
+  background: var(--surface);
+}
+.drawer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 1.4rem;
+  padding: 0.9rem 1.1rem 0 0;
+}
+.drawer pre {
+  margin: 0;
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.7rem;
+  line-height: 1.62;
+  color: var(--graphite);
+  border-top: 1px solid var(--rule);
+  padding-top: 0.55rem;
+}
+.drawer-meta {
+  font-family: var(--font-mono);
+  font-size: 0.665rem;
+  color: var(--graphite);
+  margin-top: 0.9rem;
+  padding-right: 1.1rem;
+}
+
+.footer-stats {
+  padding: 0.85rem clamp(1.1rem, 2.4vw, 1.9rem) 1.4rem;
+  border-top: 1px solid var(--rule-strong);
+  display: flex;
+  align-items: baseline;
+  gap: 1.3rem;
+  flex-wrap: wrap;
+}
+.footer-stats .mono {
+  font-size: 0.68rem;
+  color: var(--graphite);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

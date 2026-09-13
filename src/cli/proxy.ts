@@ -48,7 +48,12 @@ function estimateTokens(payload: unknown): number {
   return Math.ceil(json.length / 4);
 }
 
-export function openLogDb(dbPath = join(homedir(), ".fleetmcp", "logs.db")): Database {
+// FLEETMCP_HOME overrides the log location the same way it overrides config.yml
+// (see core/config.ts) -- without mirroring that here, every proxy run under a
+// test's temp home silently fell back to the developer's real ~/.fleetmcp/logs.db.
+export function openLogDb(
+  dbPath = join(process.env["FLEETMCP_HOME"] ?? join(homedir(), ".fleetmcp"), "logs.db"),
+): Database {
   const db = new Database(dbPath);
 
   // Create table with token columns (migration-safe: IF NOT EXISTS)
@@ -101,7 +106,7 @@ function logEntry(
 ): void {
   const id = crypto.randomUUID();
   const timestamp = new Date().toISOString();
-  db.run(
+  const { lastInsertRowid } = db.run(
     `INSERT INTO proxy_logs (id, timestamp, alias, toolName, request, response, durationMs, isError, requestTokens, responseTokens)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
@@ -119,8 +124,10 @@ function logEntry(
   );
 
   // Traffic's SSE stream subscribes here. Emitting rather than driving a stream
-  // directly keeps the logging path unaware of who is listening.
+  // directly keeps the logging path unaware of who is listening. `seq` matches
+  // rowid so streamed rows can be merged with the paginated list by the same key.
   logBus.emit("entry", {
+    seq: Number(lastInsertRowid),
     id,
     timestamp,
     alias,
@@ -655,6 +662,11 @@ export const proxyCommand = new Command("proxy")
       // 4. Start Bun HTTP server with session-aware routing
       httpServer = Bun.serve({
         port,
+        // Traffic's SSE stream is long-lived and can sit idle between calls;
+        // Bun's default idle timeout would otherwise drop it out from under
+        // an open browser tab. Disabled server-wide since nothing else here
+        // depends on idle connections being reaped.
+        idleTimeout: 0,
         // Bundled by Bun's HTML import, so the compiled binary carries the UI.
         // Routing inside the app is hash-based, which keeps deep links working
         // without a server-side catch-all.
