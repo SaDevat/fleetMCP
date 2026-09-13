@@ -1,32 +1,25 @@
 import { test, expect, describe, beforeAll, afterAll } from "bun:test";
+import { join } from "node:path";
+import { REPO, testHome, fleetmcp as runFleetmcp, startProxy, type RunningProxy } from "./helpers.ts";
 
+let env: Record<string, string>;
+
+/** Thin wrapper matching this file's original call shape: args in, stdout out. */
 async function fleetmcp(...args: string[]): Promise<string> {
-  const proc = Bun.spawn(["bun", "run", "src/index.ts", ...args], {
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ]);
-
+  const { stdout, stderr, exitCode } = await runFleetmcp({ env }, ...args);
   if (exitCode !== 0) {
     throw new Error(`fleetmcp exited with code ${exitCode}\nstderr: ${stderr}`);
   }
-
   return stdout;
 }
 
+beforeAll(() => {
+  env = testHome();
+});
+
 describe("fleetmcp config", () => {
   beforeAll(async () => {
-    // Ensure dummy server exists for tests
-    try {
-      await fleetmcp("config", "add", "dummy", "-t", "stdio", "-c", "bun", "-a", "test/echo-server.ts");
-    } catch {
-      // May already exist
-    }
+    await fleetmcp("config", "add", "dummy", "-t", "stdio", "-c", "bun", "-a", join(REPO, "test/echo-server.ts"));
   });
 
   test("config list shows table", async () => {
@@ -65,12 +58,8 @@ describe("fleetmcp inspect", () => {
   });
 
   test("inspect bad alias exits with code 2", async () => {
-    const proc = Bun.spawn(["bun", "run", "src/index.ts", "inspect", "nonexistent"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const code = await proc.exited;
-    expect(code).toBe(2);
+    const { exitCode } = await runFleetmcp({ env }, "inspect", "nonexistent");
+    expect(exitCode).toBe(2);
   });
 });
 
@@ -101,45 +90,32 @@ describe("fleetmcp test", () => {
   });
 
   test("test --ci exits 0 on pass", async () => {
-    const proc = Bun.spawn(["bun", "run", "src/index.ts", "test", "dummy", "--ci"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const code = await proc.exited;
-    expect(code).toBe(0);
+    const { exitCode } = await runFleetmcp({ env }, "test", "dummy", "--ci");
+    expect(exitCode).toBe(0);
   });
 
   test("test nonexistent alias fails", async () => {
-    const proc = Bun.spawn(["bun", "run", "src/index.ts", "test", "nonexistent"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const code = await proc.exited;
+    const { exitCode } = await runFleetmcp({ env }, "test", "nonexistent");
     // Config/connection errors exit with code 1 or 2
-    expect(code).toBeGreaterThan(0);
+    expect(exitCode).toBeGreaterThan(0);
   });
 });
 
 describe("fleetmcp proxy", () => {
+  let proxy: RunningProxy;
+
+  afterAll(() => {
+    proxy?.stop();
+  });
+
   test("proxy starts and responds to health check", async () => {
-    const proxyProc = Bun.spawn(["bun", "run", "src/index.ts", "proxy", "-p", "14390"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+    proxy = await startProxy(env);
 
-    // Wait for proxy to start
-    await Bun.sleep(3000);
+    const health = await fetch(`${proxy.base}/`);
+    expect(health.status).toBe(200);
 
-    try {
-      const health = await fetch("http://localhost:14390/");
-      expect(health.status).toBe(200);
-
-      const data = (await health.json()) as Record<string, unknown>;
-      expect(data["name"]).toBe("fleetmcp-proxy");
-      expect(data["tools"]).toBeGreaterThan(0);
-    } finally {
-      proxyProc.kill();
-      await proxyProc.exited;
-    }
+    const data = (await health.json()) as Record<string, unknown>;
+    expect(data["name"]).toBe("fleetmcp-proxy");
+    expect(data["tools"]).toBeGreaterThan(0);
   });
 });
