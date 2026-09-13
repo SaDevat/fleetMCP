@@ -69,8 +69,7 @@ function estimateTokens(payload: unknown): number {
   return Math.ceil(json.length / 4);
 }
 
-function openLogDb(): Database {
-  const dbPath = join(homedir(), ".fleetmcp", "logs.db");
+export function openLogDb(dbPath = join(homedir(), ".fleetmcp", "logs.db")): Database {
   const db = new Database(dbPath);
 
   // Create table with token columns (migration-safe: IF NOT EXISTS)
@@ -100,6 +99,12 @@ function openLogDb(): Database {
   } catch {
     // Column already exists
   }
+
+  // Traffic reads newest-first and filters by server or failure. SQLite appends
+  // rowid to every index entry, so these also satisfy ORDER BY rowid DESC with
+  // no temp B-tree. Unfiltered paging needs no index: it walks the rowid tree.
+  db.run(`CREATE INDEX IF NOT EXISTS idx_proxy_logs_alias ON proxy_logs(alias)`);
+  db.run(`CREATE INDEX IF NOT EXISTS idx_proxy_logs_is_error ON proxy_logs(isError)`);
 
   return db;
 }
