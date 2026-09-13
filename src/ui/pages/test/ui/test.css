@@ -1,0 +1,53 @@
+/* Test screen -- reuses Traffic's .thead/.trow/.mark/.drawer table classes
+ * from index.css, but with its own 4-column layout (caret, check, duration,
+ * mark) instead of Traffic's 7-column tool-call row. Scoped under
+ * .test-page (two classes) so these column widths beat the single-class
+ * .thead/.trow rules in index.css, including its @880px !important
+ * override, without touching that shared file. */
+
+.test-page .thead,
+.test-page .trow {
+  grid-template-columns: 16px minmax(0, 1fr) 90px 56px;
+}
+
+@media (max-width: 880px) {
+  .test-page .thead,
+  .test-page .trow {
+    grid-template-columns: 14px minmax(0, 1fr) 64px 46px !important;
+    gap: 0.6rem !important;
+  }
+}
+
+/* Run action.
+   A solid filled button is shadcn's default shape wearing our colours -- it has
+   no counterpart anywhere else in this UI, where every affordance is text with a
+   rule or an underline. This reads as a button without the slab: mono, squared,
+   hairline border, full-contrast ink when primary. Mirrors the servers screen's
+   dialog actions (.dlg-action / .dlg-action-primary) without importing that
+   screen's stylesheet. */
+.run-action {
+  font-family: "Inconsolata Variable", "Inconsolata", ui-monospace, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--graphite);
+  border: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.run-action:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+.run-action-primary {
+  color: var(--ink);
+  font-weight: 600;
+  border-color: var(--rule-strong);
+}
+.run-action-primary:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.run-action:disabled {
+  color: var(--graphite);
+  opacity: 0.45;
+}
