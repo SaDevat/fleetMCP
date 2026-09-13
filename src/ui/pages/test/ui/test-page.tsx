@@ -1,7 +1,6 @@
-import { useAppDispatch, useAppSelector } from "@/ui/shared/api/index.ts";
+import { useAppDispatch, useAppSelector, useGetServersQuery } from "@/ui/shared/api/index.ts";
 import { Button } from "@/ui/components/ui/button.tsx";
 import {
-  useGetServerAliasesQuery,
   useGetTestChecksQuery,
   useRunTestMutation,
   type CheckMeta,
@@ -83,11 +82,11 @@ export function TestPage() {
   const alias = useAppSelector(selectAlias);
   const expandedCheck = useAppSelector(selectExpandedCheck);
 
-  const { data: serversData, isLoading: serversLoading } = useGetServerAliasesQuery();
+  const { data: serversData, isLoading: serversLoading } = useGetServersQuery();
   const { data: checksMeta } = useGetTestChecksQuery();
   const [runTest, runState] = useRunTestMutation();
 
-  const aliases = serversData?.map((s) => s.alias) ?? [];
+  const aliases = serversData?.servers.map((s) => s.alias) ?? [];
   const hasStarted = !runState.isUninitialized;
   const pending = runState.isLoading;
   const result = runState.data;

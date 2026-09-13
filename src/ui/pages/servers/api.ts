@@ -1,26 +1,11 @@
 import { api } from "@/ui/shared/api/index.ts";
+import type { ServerEntry } from "@/ui/shared/api/index.ts";
 
 /**
  * RTK Query endpoints for the servers screen. Mirrors traffic/api.ts:
  * injectEndpoints keeps these out of the base slice so screens built in
  * parallel never edit a shared file.
  */
-
-export interface ServerEntry {
-  alias: string;
-  type: "stdio" | "http";
-  command?: string;
-  args?: string[];
-  url?: string;
-  health: "ok" | "missing" | "http";
-  connected: boolean;
-  env?: Record<string, string>;
-  headers?: Record<string, string>;
-}
-
-export interface ServersListResponse {
-  servers: ServerEntry[];
-}
 
 export interface StdioServerBody {
   type: "stdio";
@@ -45,10 +30,6 @@ export interface ImportResult {
 
 export const serversApi = api.injectEndpoints({
   endpoints: (build) => ({
-    getServers: build.query<ServersListResponse, void>({
-      query: () => "api/servers",
-      providesTags: [{ type: "Servers", id: "LIST" }],
-    }),
 
     addServer: build.mutation<ServerEntry, AddServerBody>({
       query: (body) => ({ url: "api/servers", method: "POST", body }),
@@ -74,9 +55,16 @@ export const serversApi = api.injectEndpoints({
 });
 
 export const {
-  useGetServersQuery,
   useAddServerMutation,
   useEditServerMutation,
   useDeleteServerMutation,
   useImportServersMutation,
 } = serversApi;
+
+// Re-exported so this page's components keep one import site; the query
+// itself is defined in shared/api because Call and Test consume it too.
+export {
+  useGetServersQuery,
+  type ServerEntry,
+  type ServersListResponse,
+} from "@/ui/shared/api/index.ts";

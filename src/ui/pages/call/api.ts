@@ -11,13 +11,6 @@ import { api } from "@/ui/shared/api/index.ts";
  * query definition, not a route. Both hit the same GET /api/servers.
  */
 
-export interface CallServerEntry {
-  alias: string;
-  type: "stdio" | "http";
-  health: "ok" | "missing" | "http";
-  connected: boolean;
-}
-
 export interface CallToolEntry {
   name: string;
   description?: string;
@@ -43,10 +36,6 @@ export type CallToolResponse =
 
 export const callApi = api.injectEndpoints({
   endpoints: (build) => ({
-    getCallServers: build.query<{ servers: CallServerEntry[] }, void>({
-      query: () => "api/servers",
-      providesTags: [{ type: "Servers", id: "LIST" }],
-    }),
 
     getServerTools: build.query<{ tools: CallToolEntry[] }, string>({
       query: (alias) => `api/servers/${alias}/tools`,
@@ -60,4 +49,4 @@ export const callApi = api.injectEndpoints({
   overrideExisting: false,
 });
 
-export const { useGetCallServersQuery, useGetServerToolsQuery, useCallToolMutation } = callApi;
+export const { useGetServerToolsQuery, useCallToolMutation } = callApi;

@@ -20,7 +20,8 @@ import { getConfig } from "../core/config.ts";
 import { apiError } from "../api/error.ts";
 import { apiRoutes } from "../api/index.ts";
 import type { ProxyRuntime, SubClient } from "../api/types.ts";
-import { logBus } from "../core/log-bus.ts";
+import { estimateTokens, logEntry, openLogDb } from "../core/log.ts";
+export { openLogDb } from "../core/log.ts";
 import { createMcpClient } from "../core/client.ts";
 import { brandSpinner } from "../utils/brand.ts";
 import { ensureFleetmcpDir } from "../core/config.ts";
@@ -30,7 +31,6 @@ import packageJson from "../../package.json" with { type: "json" };
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
-
 
 interface NamespacedTool {
   namespacedName: string;
@@ -43,102 +43,9 @@ interface NamespacedTool {
 // SQLite logging
 // ---------------------------------------------------------------------------
 
-function estimateTokens(payload: unknown): number {
-  const json = typeof payload === "string" ? payload : JSON.stringify(payload);
-  return Math.ceil(json.length / 4);
-}
-
 // FLEETMCP_HOME overrides the log location the same way it overrides config.yml
 // (see core/config.ts) -- without mirroring that here, every proxy run under a
 // test's temp home silently fell back to the developer's real ~/.fleetmcp/logs.db.
-export function openLogDb(
-  dbPath = join(process.env["FLEETMCP_HOME"] ?? join(homedir(), ".fleetmcp"), "logs.db"),
-): Database {
-  const db = new Database(dbPath);
-
-  // Create table with token columns (migration-safe: IF NOT EXISTS)
-  db.run(`
-    CREATE TABLE IF NOT EXISTS proxy_logs (
-      id TEXT PRIMARY KEY,
-      timestamp TEXT NOT NULL,
-      alias TEXT NOT NULL,
-      toolName TEXT NOT NULL,
-      request TEXT NOT NULL,
-      response TEXT NOT NULL,
-      durationMs INTEGER NOT NULL,
-      isError INTEGER NOT NULL,
-      requestTokens INTEGER NOT NULL DEFAULT 0,
-      responseTokens INTEGER NOT NULL DEFAULT 0
-    )
-  `);
-
-  // Add token columns to existing tables (graceful migration)
-  try {
-    db.run(`ALTER TABLE proxy_logs ADD COLUMN requestTokens INTEGER NOT NULL DEFAULT 0`);
-  } catch {
-    // Column already exists
-  }
-  try {
-    db.run(`ALTER TABLE proxy_logs ADD COLUMN responseTokens INTEGER NOT NULL DEFAULT 0`);
-  } catch {
-    // Column already exists
-  }
-
-  // Traffic reads newest-first and filters by server or failure. SQLite appends
-  // rowid to every index entry, so these also satisfy ORDER BY rowid DESC with
-  // no temp B-tree. Unfiltered paging needs no index: it walks the rowid tree.
-  db.run(`CREATE INDEX IF NOT EXISTS idx_proxy_logs_alias ON proxy_logs(alias)`);
-  db.run(`CREATE INDEX IF NOT EXISTS idx_proxy_logs_is_error ON proxy_logs(isError)`);
-
-  return db;
-}
-
-function logEntry(
-  db: Database,
-  alias: string,
-  toolName: string,
-  request: unknown,
-  response: unknown,
-  durationMs: number,
-  isError: boolean,
-  requestTokens: number,
-  responseTokens: number,
-): void {
-  const id = crypto.randomUUID();
-  const timestamp = new Date().toISOString();
-  const { lastInsertRowid } = db.run(
-    `INSERT INTO proxy_logs (id, timestamp, alias, toolName, request, response, durationMs, isError, requestTokens, responseTokens)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      timestamp,
-      alias,
-      toolName,
-      JSON.stringify(request),
-      JSON.stringify(response),
-      durationMs,
-      isError ? 1 : 0,
-      requestTokens,
-      responseTokens,
-    ],
-  );
-
-  // Traffic's SSE stream subscribes here. Emitting rather than driving a stream
-  // directly keeps the logging path unaware of who is listening. `seq` matches
-  // rowid so streamed rows can be merged with the paginated list by the same key.
-  logBus.emit("entry", {
-    seq: Number(lastInsertRowid),
-    id,
-    timestamp,
-    alias,
-    toolName,
-    durationMs,
-    isError,
-    requestTokens,
-    responseTokens,
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Proxy Command
 // ---------------------------------------------------------------------------
