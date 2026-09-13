@@ -1,0 +1,80 @@
+/* Servers screen -- reuses Traffic's .thead/.trow/.fchip/.mark/.drawer-less table
+ * classes from index.css, but with its own column layout (status dot, alias,
+ * type, connection, actions) instead of Traffic's 7-column tool-call row.
+ * Scoped under .servers-page (two classes) so these column widths beat the
+ * single-class .thead/.trow rules in index.css, including its @880px
+ * !important override, without touching that shared file. */
+
+.servers-page .thead,
+.servers-page .trow {
+  grid-template-columns: 14px minmax(90px, 160px) 60px minmax(0, 1fr) 64px;
+}
+
+@media (max-width: 880px) {
+  .servers-page .thead,
+  .servers-page .trow {
+    grid-template-columns: 12px minmax(70px, 120px) minmax(0, 1fr) 56px !important;
+    gap: 0.6rem !important;
+  }
+  .servers-page .thead .th-type,
+  .servers-page .trow .t-type {
+    display: none;
+  }
+}
+
+.servers-page .connection {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.servers-page .row-actions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.server-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.server-form-error {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink);
+}
+
+/* Dialog actions.
+   A solid filled button is shadcn's default shape wearing our colours -- it has
+   no counterpart anywhere else in this UI, where every affordance is text with a
+   rule or an underline, and at ink-on-ground it becomes the loudest thing on the
+   screen. These read as buttons without the slab: mono, squared, hairline
+   border, and the primary one carries weight and full-contrast ink. */
+.dlg-action {
+  font-family: "Inconsolata Variable", "Inconsolata", ui-monospace, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--graphite);
+  border: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.dlg-action:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+.dlg-action-primary {
+  color: var(--ink);
+  font-weight: 600;
+  border-color: var(--rule-strong);
+}
+.dlg-action-primary:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.dlg-action:disabled {
+  color: var(--graphite);
+  opacity: 0.45;
+}
