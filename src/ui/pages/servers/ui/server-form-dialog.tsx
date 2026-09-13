@@ -266,10 +266,10 @@ export function ServerFormDialog() {
             {error && <p className="server-form-error">{error}</p>}
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => dispatch(closeForm())}>
+              <Button type="button" variant="ghost" className="dlg-action" onClick={() => dispatch(closeForm())}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving}>
+              <Button type="submit" variant="outline" className="dlg-action dlg-action-primary" disabled={isSaving}>
                 {mode === "add" ? "Add server" : "Save changes"}
               </Button>
             </DialogFooter>

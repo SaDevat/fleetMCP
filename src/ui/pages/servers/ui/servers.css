@@ -45,3 +45,36 @@
   font-size: 0.72rem;
   color: var(--ink);
 }
+
+/* Dialog actions.
+   A solid filled button is shadcn's default shape wearing our colours -- it has
+   no counterpart anywhere else in this UI, where every affordance is text with a
+   rule or an underline, and at ink-on-ground it becomes the loudest thing on the
+   screen. These read as buttons without the slab: mono, squared, hairline
+   border, and the primary one carries weight and full-contrast ink. */
+.dlg-action {
+  font-family: "Inconsolata Variable", "Inconsolata", ui-monospace, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--graphite);
+  border: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+.dlg-action:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+.dlg-action-primary {
+  color: var(--ink);
+  font-weight: 600;
+  border-color: var(--rule-strong);
+}
+.dlg-action-primary:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.dlg-action:disabled {
+  color: var(--graphite);
+  opacity: 0.45;
+}
