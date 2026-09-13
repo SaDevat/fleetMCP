@@ -13,7 +13,7 @@ import { brandSpinner } from "../utils/brand.ts";
 // Individual checks — each returns a CheckResult
 // ---------------------------------------------------------------------------
 
-async function checkConnection(
+export async function checkConnection(
   alias: string,
 ): Promise<{ client: Awaited<ReturnType<typeof createMcpClient>>; result: CheckResult }> {
   const start = performance.now();
@@ -42,7 +42,7 @@ async function checkConnection(
   }
 }
 
-async function checkToolsList(
+export async function checkToolsList(
   client: Awaited<ReturnType<typeof createMcpClient>>,
 ): Promise<{ tools: Tool[]; result: CheckResult }> {
   const start = performance.now();
@@ -69,7 +69,7 @@ async function checkToolsList(
   }
 }
 
-function checkSchemaIntegrity(tools: Tool[]): CheckResult {
+export function checkSchemaIntegrity(tools: Tool[]): CheckResult {
   const start = performance.now();
   const invalid: string[] = [];
 
@@ -96,7 +96,7 @@ function checkSchemaIntegrity(tools: Tool[]): CheckResult {
   };
 }
 
-async function checkErrorResilience(
+export async function checkErrorResilience(
   client: Awaited<ReturnType<typeof createMcpClient>>,
   tools: Tool[],
 ): Promise<CheckResult> {
@@ -145,7 +145,7 @@ async function checkErrorResilience(
   };
 }
 
-async function checkUnknownTool(
+export async function checkUnknownTool(
   client: Awaited<ReturnType<typeof createMcpClient>>,
 ): Promise<CheckResult> {
   const start = performance.now();
