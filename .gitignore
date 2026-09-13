@@ -40,6 +40,7 @@ prd.md
 .cursorrules
 .cursor/
 .claude/
+.playwright-mcp/
 
 # Written once conventions solidify
 CLAUDE.md
