@@ -1,0 +1,188 @@
+/* Call screen -- three cascading panes (server -> tool -> arguments), each a
+ * .trow-style rail scoped under .call-page so the shared single-column grid
+ * here doesn't collide with Traffic's 7-column table or Servers' 5-column
+ * row (see servers.css for the same scoping pattern). */
+
+.call-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.call-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--rule);
+}
+.call-rail-servers {
+  width: 168px;
+  flex-shrink: 0;
+}
+.call-rail-tools {
+  width: 210px;
+  flex-shrink: 0;
+}
+
+.call-rail-list {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.call-page .call-rail .thead,
+.call-page .call-rail .trow {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  padding: 0.5rem 0;
+}
+
+.call-form-pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.call-meta {
+  font-size: 0.72rem;
+  color: var(--graphite);
+}
+
+.call-arg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 32rem;
+}
+
+.call-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.call-field-checkbox {
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.5rem;
+}
+.call-field textarea {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.78rem;
+  resize: vertical;
+}
+.call-field textarea:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 1px;
+}
+.call-ceiling {
+  color: var(--graphite);
+  font-size: 0.64rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.call-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1rem 0;
+  margin-top: 1.2rem;
+  border-top: 1px solid var(--rule);
+  max-width: 40rem;
+}
+.call-preview-block {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+.call-copy {
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--graphite);
+  cursor: pointer;
+  padding: 0;
+}
+.call-copy:hover {
+  color: var(--ink);
+}
+
+.call-result {
+  margin-top: 1.2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  max-width: 40rem;
+}
+.call-result pre {
+  margin: 0 0 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--graphite);
+}
+.call-result-body.mark-err pre {
+  color: var(--error);
+}
+
+/* Dialog-style action button, copied from servers.css so this page doesn't
+ * import another screen's stylesheet: a solid shadcn default button paints
+ * a --ink slab that exists nowhere else in this UI (see button.tsx variant
+ * "default"). This is mono, squared, transparent, hairline border instead. */
+.dlg-action {
+  font-family: "Inconsolata Variable", "Inconsolata", ui-monospace, monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--graphite);
+  border: 1px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  width: fit-content;
+}
+.dlg-action:hover:not(:disabled) {
+  background: transparent;
+  color: var(--ink);
+}
+.dlg-action-primary {
+  color: var(--ink);
+  font-weight: 600;
+  border-color: var(--rule-strong);
+}
+.dlg-action-primary:hover:not(:disabled) {
+  border-color: var(--ink);
+}
+.dlg-action:disabled {
+  color: var(--graphite);
+  opacity: 0.45;
+}
+
+.server-form-error {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--ink);
+}
+
+@media (max-width: 880px) {
+  .call-page {
+    flex-direction: column;
+  }
+  .call-rail-servers,
+  .call-rail-tools {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--rule);
+  }
+  .call-rail-list {
+    max-height: 8rem;
+  }
+}
