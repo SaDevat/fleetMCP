@@ -1,23 +1,23 @@
 import { test, expect, describe, beforeAll, afterAll } from "bun:test";
+import { join } from "node:path";
+import { REPO, testHome, fleetmcp, startProxy, type RunningProxy } from "./helpers.ts";
 
 // Regression check for #2 — proxy sessions were never removed from the session
 // map, so it grew for the lifetime of the process. The map is closure-local,
 // but GET / reports its size, which is enough to assert on.
 
-const PORT = 14391;
-const BASE = `http://localhost:${PORT}`;
-
-let proxy: ReturnType<typeof Bun.spawn> | undefined;
+let env: Record<string, string>;
+let proxy: RunningProxy;
 
 async function sessionCount(): Promise<number> {
-  const res = await fetch(`${BASE}/`);
+  const res = await fetch(`${proxy.base}/`);
   const body = (await res.json()) as { sessions: number };
   return body.sessions;
 }
 
 /** Completes an MCP initialize handshake, returns the assigned session id. */
 async function openSession(): Promise<string> {
-  const res = await fetch(`${BASE}/mcp`, {
+  const res = await fetch(`${proxy.base}/mcp`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -41,7 +41,7 @@ async function openSession(): Promise<string> {
 }
 
 async function closeSession(id: string): Promise<Response> {
-  return fetch(`${BASE}/mcp`, {
+  return fetch(`${proxy.base}/mcp`, {
     method: "DELETE",
     headers: { "mcp-session-id": id, "mcp-protocol-version": "2025-06-18" },
   });
@@ -49,25 +49,16 @@ async function closeSession(id: string): Promise<Response> {
 
 describe("proxy session reaping", () => {
   beforeAll(async () => {
-    proxy = Bun.spawn(["bun", "run", "src/index.ts", "proxy", "--port", String(PORT)], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-
-    // Sub-servers are spawned at boot; npx-based ones are slow to cold-start.
-    for (let i = 0; i < 40; i++) {
-      try {
-        await fetch(`${BASE}/`);
-        return;
-      } catch {
-        await Bun.sleep(500);
-      }
-    }
-    throw new Error("proxy did not come up");
-  });
+    env = testHome();
+    // The proxy refuses to start with zero servers configured; this test
+    // only needs the process up, not this particular server's tools.
+    await fleetmcp({ env }, "config", "add", "dummy", "-t", "stdio", "-c", "bun",
+                   "-a", join(REPO, "test/echo-server.ts"));
+    proxy = await startProxy(env);
+  }, 60_000);
 
   afterAll(() => {
-    proxy?.kill();
+    proxy.stop();
   });
 
   test("starts with no sessions", async () => {

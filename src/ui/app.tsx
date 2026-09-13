@@ -15,7 +15,17 @@ import {
   SidebarProvider,
 } from "@/ui/components/ui/sidebar";
 import { NotFound } from "@/ui/components/not-found";
+import { ServersView } from "@/ui/views/servers";
+import { InspectView } from "@/ui/views/inspect";
+import { CallView } from "@/ui/views/call";
+import { TrafficView } from "@/ui/views/traffic";
+import { TestView } from "@/ui/views/test";
 import { store } from "@/ui/store";
+// Imported for effect: each module injects its endpoints into the api slice.
+import "@/ui/api/traffic";
+import "@/ui/api/servers";
+import "@/ui/api/call";
+import "@/ui/api/test";
 
 const ROUTES = ["servers", "inspect", "call", "traffic", "test"] as const;
 type Route = (typeof ROUTES)[number];
@@ -38,51 +48,6 @@ function useHashRoute(): string {
   }, []);
 
   return hash;
-}
-
-function ServersView() {
-  return (
-    <div className="p-8">
-      <h1 className="font-display text-xl text-ink">Servers</h1>
-      <p className="mt-2 text-graphite">Connected MCP servers will be listed here.</p>
-    </div>
-  );
-}
-
-function InspectView() {
-  return (
-    <div className="p-8">
-      <h1 className="font-display text-xl text-ink">Inspect</h1>
-      <p className="mt-2 text-graphite">Browse tools, resources, and prompts exposed by a server.</p>
-    </div>
-  );
-}
-
-function CallView() {
-  return (
-    <div className="p-8">
-      <h1 className="font-display text-xl text-ink">Call</h1>
-      <p className="mt-2 text-graphite">Invoke a tool call and inspect its result.</p>
-    </div>
-  );
-}
-
-function TrafficView() {
-  return (
-    <div className="p-8">
-      <h1 className="font-display text-xl text-ink">Traffic</h1>
-      <p className="mt-2 text-graphite">A live log of calls proxied through FleetMCP.</p>
-    </div>
-  );
-}
-
-function TestView() {
-  return (
-    <div className="p-8">
-      <h1 className="font-display text-xl text-ink">Test</h1>
-      <p className="mt-2 text-graphite">Run compliance checks against a configured server.</p>
-    </div>
-  );
 }
 
 const VIEWS: Record<Route, () => React.JSX.Element> = {

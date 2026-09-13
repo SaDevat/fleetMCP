@@ -1,40 +1,27 @@
-import { test, expect, describe, afterAll } from "bun:test";
+import { test, expect, describe, beforeAll } from "bun:test";
 import { parse as parseYaml } from "yaml";
-import { tmpdir, homedir } from "node:os";
+import { tmpdir } from "node:os";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join, isAbsolute } from "node:path";
+import { testHome, fleetmcp, configPath } from "./helpers.ts";
 
 // Regression check for #3 — a relative path in a stdio server's command/args
 // resolved against whatever CWD fleetmcp happened to run from, so an alias that
 // worked from the project root failed everywhere else.
 
-const REPO = process.cwd();
 const ALIAS = "pathcheck";
 
-async function fleetmcp(cwd: string, ...args: string[]) {
-  const proc = Bun.spawn(["bun", "run", join(REPO, "src/index.ts"), ...args], {
-    cwd,
-    stdout: "pipe",
-    stderr: "pipe",
-  });
-  const [stdout, stderr, exitCode] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-    proc.exited,
-  ]);
-  return { stdout, stderr, exitCode };
-}
+// Its own throwaway home: this test writes config, and sharing the real one
+// makes concurrent runs race each other.
+let env: Record<string, string>;
+beforeAll(() => {
+  env = testHome();
+});
 
 describe("stdio path pinning", () => {
-  afterAll(async () => {
-    await fleetmcp(REPO, "config", "remove", ALIAS);
-  });
-
   test("a relative path registered from the repo root is stored absolute", async () => {
-    await fleetmcp(REPO, "config", "remove", ALIAS); // may not exist; ignore
-
     const add = await fleetmcp(
-      REPO,
+      { env },
       "config", "add", ALIAS,
       "-t", "stdio", "-c", "bun", "-a", "test/echo-server.ts",
     );
@@ -42,7 +29,7 @@ describe("stdio path pinning", () => {
 
     // Assert against the stored config, not rendered table output — the table
     // wraps long paths across lines and its layout is not a contract.
-    const raw = await Bun.file(join(homedir(), ".fleetmcp", "config.yml")).text();
+    const raw = await Bun.file(configPath(env)).text();
     const stored = parseYaml(raw) as { servers: Record<string, { args?: string[] }> };
 
     const args = stored.servers[ALIAS]?.args ?? [];
@@ -55,7 +42,7 @@ describe("stdio path pinning", () => {
     const elsewhere = await mkdtemp(join(tmpdir(), "fleetmcp-cwd-"));
     try {
       // Before the fix this failed with: Module not found "test/echo-server.ts"
-      const res = await fleetmcp(elsewhere, "inspect", ALIAS);
+      const res = await fleetmcp({ env, cwd: elsewhere }, "inspect", ALIAS);
       expect(res.exitCode).toBe(0);
       expect(res.stdout + res.stderr).toContain("echo-test-server");
     } finally {

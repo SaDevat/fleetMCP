@@ -17,6 +17,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import type { Tool } from "@modelcontextprotocol/sdk/types.js";
 import { getConfig } from "../core/config.ts";
+import { apiError } from "../api/error.ts";
+import { apiRoutes } from "../api/index.ts";
+import type { ProxyRuntime, SubClient } from "../api/types.ts";
+import { logBus } from "../core/log-bus.ts";
 import { createMcpClient } from "../core/client.ts";
 import { brandSpinner } from "../utils/brand.ts";
 import { ensureFleetmcpDir } from "../core/config.ts";
@@ -27,37 +31,12 @@ import packageJson from "../../package.json" with { type: "json" };
 // Types
 // ---------------------------------------------------------------------------
 
-interface SubClient {
-  alias: string;
-  client: Awaited<ReturnType<typeof createMcpClient>>;
-  /** Set when the transport closes; cleared on a successful reconnect. */
-  dead: boolean;
-  /** Epoch ms of the last reconnect attempt, for backoff. */
-  lastAttempt: number;
-  /** Consecutive failed reconnects; widens the backoff window. */
-  failures: number;
-}
 
 interface NamespacedTool {
   namespacedName: string;
   alias: string;
   originalName: string;
   tool: Tool;
-}
-
-// ---------------------------------------------------------------------------
-// HTTP API
-// ---------------------------------------------------------------------------
-
-/**
- * Every /api/* route answers a failure with this one shape, so the UI has a
- * single branch to write. `not_found` is a first-class view there, not a toast:
- * ids travel in the URL, so an invented or pruned one is a normal arrival.
- */
-type ApiErrorCode = "not_found" | "bad_request" | "upstream_unavailable";
-
-function apiError(status: number, code: ApiErrorCode, message: string): Response {
-  return Response.json({ error: { code, message } }, { status });
 }
 
 // ---------------------------------------------------------------------------
@@ -138,6 +117,19 @@ function logEntry(
       responseTokens,
     ],
   );
+
+  // Traffic's SSE stream subscribes here. Emitting rather than driving a stream
+  // directly keeps the logging path unaware of who is listening.
+  logBus.emit("entry", {
+    id,
+    timestamp,
+    alias,
+    toolName,
+    durationMs,
+    isError,
+    requestTokens,
+    responseTokens,
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -178,7 +170,11 @@ export const proxyCommand = new Command("proxy")
     process.on("SIGTERM", onShutdown);
 
     try {
-      const port = parseInt(options.port, 10) || 4390;
+      // `|| 4390` would swallow a deliberate 0: parseInt("0") is falsy, so the
+      // fallback fired and port 0 silently became 4390. Tests pass 0 to have
+      // the OS assign a free port, which is what lets suites run concurrently.
+      const parsedPort = Number.parseInt(options.port, 10);
+      const port = Number.isNaN(parsedPort) ? 4390 : parsedPort;
       const config = await getConfig();
       const entries = Object.entries(config.servers);
 
@@ -642,13 +638,27 @@ export const proxyCommand = new Command("proxy")
         return { server, transport, lastSeen: Date.now() };
       }
 
+      // The proxy's running state, handed to the route modules. Passed rather
+      // than held at module scope so nothing leaks between two proxies in one
+      // process, and so each route module can be tested without a real server.
+      const runtime: ProxyRuntime = {
+        subClients,
+        clientMap,
+        ensureLive,
+        wrapUri,
+        unwrapUri,
+        get db() {
+          return db;
+        },
+      };
+
       // 4. Start Bun HTTP server with session-aware routing
       httpServer = Bun.serve({
         port,
         // Bundled by Bun's HTML import, so the compiled binary carries the UI.
         // Routing inside the app is hash-based, which keeps deep links working
         // without a server-side catch-all.
-        routes: { "/ui": uiIndex },
+        routes: { "/ui": uiIndex, ...apiRoutes(runtime) },
         async fetch(req) {
           const url = new URL(req.url);
 
@@ -749,9 +759,14 @@ export const proxyCommand = new Command("proxy")
         },
       });
 
+      // Bun assigns the real port when `port` is 0, so report what was bound
+      // rather than what was asked for. Tests spawn with `-p 0` and read this
+      // back, which is what lets suites run concurrently without colliding.
+      const boundPort = httpServer.port;
+
       console.log(
         chalk.green(`\nProxy listening on `) +
-          chalk.cyan.bold(`http://localhost:${port}/mcp`),
+          chalk.cyan.bold(`http://localhost:${boundPort}/mcp`),
       );
       console.log(chalk.dim("Press Ctrl+C to stop.\n"));
 

@@ -8,7 +8,12 @@ import { FleetmcpConfigSchema, type FleetmcpConfig, type ServerConfig } from "..
 // Paths
 // ---------------------------------------------------------------------------
 
-const FLEETMCP_DIR = join(homedir(), ".fleetmcp");
+/**
+ * FLEETMCP_HOME overrides the config directory. Tests point it at a temp dir so
+ * a suite run cannot write the developer's real fleet; without it, concurrent
+ * runs race the same config.yml.
+ */
+const FLEETMCP_DIR = process.env["FLEETMCP_HOME"] ?? join(homedir(), ".fleetmcp");
 const CONFIG_PATH = join(FLEETMCP_DIR, "config.yml");
 
 // ---------------------------------------------------------------------------
