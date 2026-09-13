@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import { Database } from "bun:sqlite";
+import uiIndex from "../ui/index.html";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
@@ -42,6 +43,21 @@ interface NamespacedTool {
   alias: string;
   originalName: string;
   tool: Tool;
+}
+
+// ---------------------------------------------------------------------------
+// HTTP API
+// ---------------------------------------------------------------------------
+
+/**
+ * Every /api/* route answers a failure with this one shape, so the UI has a
+ * single branch to write. `not_found` is a first-class view there, not a toast:
+ * ids travel in the URL, so an invented or pruned one is a normal arrival.
+ */
+type ApiErrorCode = "not_found" | "bad_request" | "upstream_unavailable";
+
+function apiError(status: number, code: ApiErrorCode, message: string): Response {
+  return Response.json({ error: { code, message } }, { status });
 }
 
 // ---------------------------------------------------------------------------
@@ -629,8 +645,18 @@ export const proxyCommand = new Command("proxy")
       // 4. Start Bun HTTP server with session-aware routing
       httpServer = Bun.serve({
         port,
+        // Bundled by Bun's HTML import, so the compiled binary carries the UI.
+        // Routing inside the app is hash-based, which keeps deep links working
+        // without a server-side catch-all.
+        routes: { "/ui": uiIndex },
         async fetch(req) {
           const url = new URL(req.url);
+
+          // Unmatched /api/* must not fall through to the HTML shell below --
+          // the UI would try to parse a page as JSON.
+          if (url.pathname.startsWith("/api/")) {
+            return apiError(404, "not_found", `No API route ${url.pathname}`);
+          }
 
           if (url.pathname === "/mcp") {
             const sessionId = req.headers.get("mcp-session-id");
