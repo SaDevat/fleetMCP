@@ -97,9 +97,14 @@ function isRoute(value: string): value is Route {
   return (ROUTES as readonly string[]).includes(value);
 }
 
+// Landing on /ui with no hash is the common case, not a wrong turn -- it must
+// resolve to a real view rather than the not-found state.
+const DEFAULT_ROUTE: Route = "servers";
+
 function Main() {
   const hash = useHashRoute();
-  const View = isRoute(hash) ? VIEWS[hash] : null;
+  const route = hash === "" ? DEFAULT_ROUTE : hash;
+  const View = isRoute(route) ? VIEWS[route] : null;
 
   return (
     <SidebarProvider>
@@ -111,10 +116,10 @@ function Main() {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {NAV.map(({ route, label }) => (
-                  <SidebarMenuItem key={route}>
-                    <SidebarMenuButton asChild isActive={hash === route}>
-                      <a href={`#/${route}`}>{label}</a>
+                {NAV.map(({ route: navRoute, label }) => (
+                  <SidebarMenuItem key={navRoute}>
+                    <SidebarMenuButton asChild isActive={route === navRoute}>
+                      <a href={`#/${navRoute}`}>{label}</a>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
