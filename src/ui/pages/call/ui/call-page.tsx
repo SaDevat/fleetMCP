@@ -1,5 +1,6 @@
 import { useAppDispatch, useAppSelector } from "@/ui/shared/api/index.ts";
-import { useGetCallServersQuery, useGetServerToolsQuery } from "../api.ts";
+import { useGetServerToolsQuery } from "../api.ts";
+import { useGetServersQuery } from "@/ui/shared/api/index.ts";
 import { selectServer, selectSelectedAlias, selectSelectedTool, selectTool } from "../model.ts";
 import { ArgumentForm } from "./argument-form.tsx";
 import "./call.css";
@@ -15,7 +16,7 @@ export function CallPage() {
   const selectedAlias = useAppSelector(selectSelectedAlias);
   const selectedTool = useAppSelector(selectSelectedTool);
 
-  const { data: serversData, isLoading: serversLoading } = useGetCallServersQuery();
+  const { data: serversData, isLoading: serversLoading } = useGetServersQuery();
   const { data: toolsData, isLoading: toolsLoading } = useGetServerToolsQuery(selectedAlias ?? "", { skip: !selectedAlias });
 
   const servers = serversData?.servers ?? [];

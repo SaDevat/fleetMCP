@@ -1,8 +1,8 @@
 import type { Database } from "bun:sqlite";
 import type { ProxyRuntime, SubClient } from "./types.ts";
 import { apiError } from "./error.ts";
+import { estimateTokens, logEntry } from "../core/log.ts";
 import { listAllTools } from "../cli/inspect.ts";
-import { logBus } from "../core/log-bus.ts";
 
 /**
  * Routes for the Call console. Owned by its screen's branch -- mirrors
@@ -22,55 +22,6 @@ export interface CallToolEntry {
   description?: string;
   inputSchema: unknown;
   namespaced: string;
-}
-
-function estimateTokens(payload: unknown): number {
-  const json = typeof payload === "string" ? payload : JSON.stringify(payload);
-  return Math.ceil(json.length / 4);
-}
-
-function logCall(
-  db: Database,
-  alias: string,
-  toolName: string,
-  request: unknown,
-  response: unknown,
-  durationMs: number,
-  isError: boolean,
-): void {
-  const id = crypto.randomUUID();
-  const timestamp = new Date().toISOString();
-  const requestTokens = estimateTokens(request);
-  const responseTokens = estimateTokens(response);
-
-  const { lastInsertRowid } = db.run(
-    `INSERT INTO proxy_logs (id, timestamp, alias, toolName, request, response, durationMs, isError, requestTokens, responseTokens)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      id,
-      timestamp,
-      alias,
-      toolName,
-      JSON.stringify(request),
-      JSON.stringify(response),
-      durationMs,
-      isError ? 1 : 0,
-      requestTokens,
-      responseTokens,
-    ],
-  );
-
-  logBus.emit("entry", {
-    seq: Number(lastInsertRowid),
-    id,
-    timestamp,
-    alias,
-    toolName,
-    durationMs,
-    isError,
-    requestTokens,
-    responseTokens,
-  });
 }
 
 type ResolveResult = { sub: SubClient } | { failure: "not_found" } | { failure: "down" };
@@ -192,7 +143,9 @@ export function callRoutes(rt: ProxyRuntime): Record<string, unknown> {
           const durationMs = Math.round(performance.now() - start);
           const isError = (result as Record<string, unknown>)["isError"] === true;
 
-          if (rt.db) logCall(rt.db, alias, tool, toolArgs, result, durationMs, isError);
+          if (rt.db)
+            logEntry(rt.db, alias, tool, toolArgs, result, durationMs, isError,
+              estimateTokens(toolArgs), estimateTokens(result));
 
           return Response.json(result);
         } catch (error) {
@@ -200,7 +153,9 @@ export function callRoutes(rt: ProxyRuntime): Record<string, unknown> {
           const errMsg = error instanceof Error ? error.message : "unknown error";
           const errorResponse = { error: errMsg };
 
-          if (rt.db) logCall(rt.db, alias, tool, toolArgs, errorResponse, durationMs, true);
+          if (rt.db)
+            logEntry(rt.db, alias, tool, toolArgs, errorResponse, durationMs, true,
+              estimateTokens(toolArgs), estimateTokens(errorResponse));
 
           return Response.json(errorResponse);
         }
