@@ -44,3 +44,7 @@ prd.md
 
 # Written once conventions solidify
 CLAUDE.md
+
+# Agent skills vendored by the skills CLI — tooling, not product
+.agents/
+skills-lock.json
