@@ -48,3 +48,6 @@ CLAUDE.md
 # Agent skills vendored by the skills CLI — tooling, not product
 .agents/
 skills-lock.json
+
+# CodeGraph index — machine-local, rebuilt on demand
+.codegraph/
